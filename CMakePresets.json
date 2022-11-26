@@ -1,0 +1,43 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default (Release) configuration",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug configuration",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "displayName": "Default (Release) configuration",
+            "configurePreset": "default",
+            "jobs": 8,
+            "targets": [
+                "chess"
+            ]
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug configuration",
+            "inherits": "default",
+            "configurePreset": "debug"
+        }
+    ]
+}
