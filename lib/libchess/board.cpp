@@ -177,9 +177,17 @@ namespace libchess {
 
     std::shared_ptr<board> board::create() {
         auto _board = new board;
+
+        _board->m_data.halfmove_clock = 0;
+        _board->m_data.fullmove_count = 1;
+
         for (size_t i = 0; i < size; i++) {
             _board->m_data.pieces[i] = { piece_type::none };
         }
+
+        _board->m_data.player_castling_availability[player_color::white] =
+            _board->m_data.player_castling_availability[player_color::black] =
+                castling_availability_king | castling_availability_queen;
 
         return std::shared_ptr<board>(_board);
     }
@@ -192,7 +200,7 @@ namespace libchess {
     }
 
     std::shared_ptr<board> board::create(const std::string& fen) {
-        auto _board = create();
+        auto _board = std::shared_ptr<board>(new board);
         if (!parse_fen_string(fen, _board->m_data)) {
             _board.reset();
         }
@@ -202,9 +210,7 @@ namespace libchess {
 
     std::shared_ptr<board> board::create_default() {
         // fen string for the default board configuration
-        static const std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-        return create(fen);
+        return create("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
 
     size_t board::get_index(const coord& pos) {
@@ -225,11 +231,5 @@ namespace libchess {
     void board::set_piece(const coord& pos, const piece_info_t& piece) {
         size_t index = get_index(pos);
         m_data.pieces[index] = piece;
-    }
-
-    board::board() {
-        m_data.player_castling_availability[player_color::white] =
-            m_data.player_castling_availability[player_color::black] =
-                castling_availability_king | castling_availability_queen;
     }
 } // namespace libchess

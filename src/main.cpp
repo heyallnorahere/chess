@@ -18,7 +18,10 @@
 #include <iostream>
 
 int main(int argc, const char** argv) {
-    auto board = libchess::board::create_default();
+    auto board = libchess::board::create("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    if (!board) {
+        return 1;
+    }
 
     for (int32_t y = (int32_t)(libchess::board::width - 1); y >= 0; y--) {
         for (int32_t x = 0; x < (int32_t)libchess::board::width; x++) {

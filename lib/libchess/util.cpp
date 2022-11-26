@@ -45,8 +45,8 @@ namespace libchess::util {
     }
 
     bool parse_coordinate(const std::string& coordinate, coord& result) {
-        static const std::regex coordinate_expression("[a-hA-H][1-8]");
-        if (!std::regex_match(coordinate, coordinate_expression)) {
+        static const std::regex filter("[a-hA-H][1-8]");
+        if (!std::regex_match(coordinate, filter)) {
             return false;
         }
 
@@ -54,7 +54,7 @@ namespace libchess::util {
         result.x = (int32_t)x_char - (int32_t)'a';
 
         std::string y_string = coordinate.substr(1);
-        result.y = (int32_t)std::atoi(y_string.c_str());
+        result.y = (int32_t)std::atoi(y_string.c_str()) - 1;
 
         return true;
     }

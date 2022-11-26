@@ -64,7 +64,7 @@ namespace libchess {
         data_t& get_data() { return m_data; }
 
     private:
-        board();
+        board() = default;
 
         data_t m_data;
     };
