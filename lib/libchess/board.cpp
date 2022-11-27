@@ -199,6 +199,15 @@ namespace libchess {
         return std::shared_ptr<board>(_board);
     }
 
+    std::shared_ptr<board> board::copy(std::shared_ptr<board> existing) {
+        std::shared_ptr<board> result;
+        if (existing) {
+            result = create(existing->m_data);
+        }
+
+        return result;
+    }
+
     std::shared_ptr<board> board::create(const std::string& fen) {
         auto _board = std::shared_ptr<board>(new board);
         if (!parse_fen_string(fen, _board->m_data)) {
@@ -223,13 +232,37 @@ namespace libchess {
         return (y * board::width) + x;
     }
 
-    const piece_info_t& board::get_piece(const coord& pos) {
-        size_t index = get_index(pos);
-        return m_data.pieces[index];
+    bool board::is_out_of_bounds(const coord& pos) {
+        return pos.x < 0 || pos.x >= width || pos.y < 0 || pos.y >= width;
     }
 
-    void board::set_piece(const coord& pos, const piece_info_t& piece) {
+    bool board::get_piece(const coord& pos, piece_info_t* piece) {
+        if (is_out_of_bounds(pos)) {
+            if (piece != nullptr) {
+                piece->type = piece_type::none;
+            }
+
+            return false;
+        } else {
+            size_t index = get_index(pos);
+            const auto& data = m_data.pieces[index];
+
+            if (piece != nullptr) {
+                *piece = data;
+            }
+
+            return data.type != piece_type::none;
+        }
+    }
+
+    bool board::set_piece(const coord& pos, const piece_info_t& piece) {
+        if (is_out_of_bounds(pos)) {
+            return false;
+        }
+
         size_t index = get_index(pos);
         m_data.pieces[index] = piece;
+
+        return true;
     }
 } // namespace libchess

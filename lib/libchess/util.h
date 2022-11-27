@@ -30,4 +30,5 @@ namespace libchess::util {
                       uint32_t options = string_split_options_none);
 
     bool parse_coordinate(const std::string& coordinate, coord& result);
+    std::string serialize_coordinate(const coord& position);
 } // namespace libchess::util

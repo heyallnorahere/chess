@@ -28,6 +28,8 @@ namespace libchess {
             y = _y;
         }
 
+        int32_t taxicab_length() const { return std::abs(x) + std::abs(y); }
+
         bool operator==(const coord& other) const { return x == other.x && y == other.y; }
         bool operator!=(const coord& other) const { return x != other.x || y != other.y; }
 
@@ -37,5 +39,18 @@ namespace libchess {
         coord operator-() const { return coord(-x, -y); }
         coord operator-(const coord& other) const { return *this + -other; }
         coord& operator-=(const coord& other) { return *this = *this - other; }
+
+        coord operator*(const coord& other) const { return coord(x * other.x, y * other.y); }
+        coord& operator*=(const coord& other) { return *this = *this * other; }
     };
-}; // namespace libchess
+} // namespace libchess
+
+namespace std {
+    template <>
+    struct hash<libchess::coord> {
+        size_t operator()(const libchess::coord& c) const {
+            std::hash<int32_t> hasher;
+            return hasher(c.x) ^ (hasher(c.y) << 1);
+        }
+    };
+} // namespace std

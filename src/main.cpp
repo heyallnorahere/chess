@@ -17,53 +17,51 @@
 #include "pch.h"
 #include <iostream>
 
+static void on_capture(const libchess::piece_info_t& piece, void* data) {
+    std::string piece_name;
+    switch (piece.type) {
+    case libchess::piece_type::king:
+        piece_name = "king";
+        break;
+    case libchess::piece_type::queen:
+        piece_name = "queen";
+        break;
+    case libchess::piece_type::rook:
+        piece_name = "rook";
+        break;
+    case libchess::piece_type::knight:
+        piece_name = "knight";
+        break;
+    case libchess::piece_type::bishop:
+        piece_name = "bishop";
+        break;
+    case libchess::piece_type::pawn:
+        piece_name = "pawn";
+        break;
+    default:
+        return;
+    }
+
+    std::string color_name = piece.color == libchess::player_color::white ? "white" : "black";
+    std::cout << "piece captured\ntype: " << piece_name << "\ncolor: " << color_name << std::endl;
+}
+
 int main(int argc, const char** argv) {
-    auto board = libchess::board::create("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    auto board =
+        libchess::board::create("rnbqkbnr/pppppppp/8/8/8/8/PPPPpPPP/RNBQKBNR w KQkq - 0 1");
     if (!board) {
         return 1;
     }
 
-    for (int32_t y = (int32_t)(libchess::board::width - 1); y >= 0; y--) {
-        for (int32_t x = 0; x < (int32_t)libchess::board::width; x++) {
-            const auto& piece = board->get_piece(libchess::coord(x, y));
+    libchess::engine engine(board);
+    engine.set_capture_callback(on_capture);
 
-            char piece_character;
-            switch (piece.type) {
-            case libchess::piece_type::none:
-                piece_character = ' ';
-                break;
-            case libchess::piece_type::king:
-                piece_character = 'k';
-                break;
-            case libchess::piece_type::queen:
-                piece_character = 'q';
-                break;
-            case libchess::piece_type::rook:
-                piece_character = 'r';
-                break;
-            case libchess::piece_type::knight:
-                piece_character = 'n';
-                break;
-            case libchess::piece_type::bishop:
-                piece_character = 'b';
-                break;
-            case libchess::piece_type::pawn:
-                piece_character = 'p';
-                break;
-            default:
-                return 1;
-            }
+    libchess::move_t move;
+    move.position = libchess::coord(6, 0);
+    move.destination = libchess::coord(4, 1);
 
-            if (piece.type != libchess::piece_type::none &&
-                piece.color == libchess::player_color::white) {
-                piece_character +=
-                    ('A' - 'a'); // i know it's negative i just think this looks neater
-            }
-
-            std::cout << piece_character;
-        }
-
-        std::cout << std::endl;
+    if (!engine.commit_move(move)) {
+        return 1;
     }
 
     return 0;

@@ -19,4 +19,5 @@
 
 #include "libchess/coord.h"
 #include "libchess/board.h"
+#include "libchess/engine.h"
 #include "libchess/util.h"

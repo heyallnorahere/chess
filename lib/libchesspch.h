@@ -26,3 +26,5 @@
 #include <regex>
 #include <array>
 #include <optional>
+#include <algorithm>
+#include <sstream>

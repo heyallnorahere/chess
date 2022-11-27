@@ -16,6 +16,7 @@
 
 #include "libchesspch.h"
 #include "util.h"
+#include "board.h"
 
 namespace libchess::util {
     void split_string(const std::string& src, char delimiter, std::vector<std::string>& result,
@@ -57,5 +58,20 @@ namespace libchess::util {
         result.y = (int32_t)std::atoi(y_string.c_str()) - 1;
 
         return true;
+    }
+
+    std::string serialize_coordinate(const coord& position) {
+        std::string result;
+
+        if (!board::is_out_of_bounds(position)) {
+            std::stringstream stream;
+
+            stream << 'a' + (char)position.x;
+            stream << position.y + 1;
+
+            result = stream.str();
+        }
+
+        return result;
     }
 } // namespace libchess::util

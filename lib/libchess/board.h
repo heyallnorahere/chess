@@ -47,19 +47,21 @@ namespace libchess {
 
         static std::shared_ptr<board> create();
         static std::shared_ptr<board> create(const data_t& data);
+        static std::shared_ptr<board> copy(std::shared_ptr<board> existing);
 
         static std::shared_ptr<board> create(const std::string& fen);
         static std::shared_ptr<board> create_default();
 
         static size_t get_index(const coord& pos);
+        static bool is_out_of_bounds(const coord& pos);
 
         ~board() = default;
 
         board(const board&) = delete;
         board& operator=(const board&) = delete;
 
-        const piece_info_t& get_piece(const coord& pos);
-        void set_piece(const coord& pos, const piece_info_t& piece);
+        bool get_piece(const coord& pos, piece_info_t* piece);
+        bool set_piece(const coord& pos, const piece_info_t& piece);
 
         data_t& get_data() { return m_data; }
 
