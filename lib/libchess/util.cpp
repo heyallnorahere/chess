@@ -66,8 +66,8 @@ namespace libchess::util {
         if (!board::is_out_of_bounds(position)) {
             std::stringstream stream;
 
-            stream << 'a' + (char)position.x;
-            stream << position.y + 1;
+            stream << (char)('a' + position.x);
+            stream << (position.y + 1);
 
             result = stream.str();
         }

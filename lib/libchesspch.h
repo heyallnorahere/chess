@@ -28,3 +28,6 @@
 #include <optional>
 #include <algorithm>
 #include <sstream>
+#include <list>
+#include <stdexcept>
+#include <utility>

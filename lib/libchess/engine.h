@@ -50,7 +50,7 @@ namespace libchess {
         void find_pieces(const piece_query_t& query, std::vector<coord>& positions);
         void compute_check(player_color color, std::vector<coord>& pieces);
 
-        bool compute_legal_moves(const coord& pos, std::vector<coord>& destinations);
+        bool compute_legal_moves(const coord& pos, std::list<coord>& destinations);
         bool is_move_legal(const move_t& move);
         bool commit_move(const move_t& move, bool check_legality = true, bool advance_turn = true);
 
@@ -60,7 +60,7 @@ namespace libchess {
         std::shared_ptr<board> m_board;
         board::data_t* m_board_data = nullptr; // convenience
 
-        std::unordered_map<std::string, std::vector<coord>> m_legal_move_cache;
+        std::unordered_map<std::string, std::list<coord>> m_legal_move_cache;
         std::unordered_map<player_color, std::vector<coord>> m_checking_pieces_cache;
 
         void* m_callback_data = nullptr;

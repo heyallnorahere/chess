@@ -98,7 +98,7 @@ namespace libchess {
             find_pieces(query, opposing_pieces);
 
             for (const auto& piece_pos : opposing_pieces) {
-                std::vector<coord> legal_moves;
+                std::list<coord> legal_moves;
                 compute_legal_moves(piece_pos, legal_moves);
 
                 for (const auto& move : legal_moves) {
@@ -121,7 +121,7 @@ namespace libchess {
     // spaghetti-esque
     // yknow what no it *is* spaghetti code this shit is awful
     // i am never touching this again
-    bool engine::compute_legal_moves(const coord& pos, std::vector<coord>& destinations) {
+    bool engine::compute_legal_moves(const coord& pos, std::list<coord>& destinations) {
         destinations.clear();
 
         std::string serialized = util::serialize_coordinate(pos);
@@ -277,7 +277,9 @@ namespace libchess {
             move.position = pos;
 
             engine temp_engine;
-            for (auto it = destinations.begin(); it != destinations.end(); it++) {
+            auto it = destinations.begin();
+
+            while (it != destinations.end()) {
                 move.destination = *it;
 
                 piece_info_t temp_piece;
@@ -295,6 +297,8 @@ namespace libchess {
 
                 if (pieces.size() > 0) {
                     it = destinations.erase(it);
+                } else {
+                    it++;
                 }
             }
         }
@@ -304,7 +308,7 @@ namespace libchess {
     }
 
     bool engine::is_move_legal(const move_t& move) {
-        std::vector<coord> legal_moves;
+        std::list<coord> legal_moves;
         if (!compute_legal_moves(move.position, legal_moves)) {
             return false;
         }

@@ -28,10 +28,23 @@
             "name": "default",
             "displayName": "Default (Release) configuration",
             "configurePreset": "default",
-            "jobs": 8,
-            "targets": [
-                "chess"
-            ]
+            "jobs": 8
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug configuration",
+            "inherits": "default",
+            "configurePreset": "debug"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "displayName": "Default (Release) configuration",
+            "configurePreset": "default",
+            "output": {
+                "outputOnFailure": true
+            }
         },
         {
             "name": "debug",
