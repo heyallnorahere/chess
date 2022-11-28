@@ -28,13 +28,15 @@
             "name": "default",
             "displayName": "Default (Release) configuration",
             "configurePreset": "default",
+            "configuration": "Release",
             "jobs": 8
         },
         {
             "name": "debug",
             "displayName": "Debug configuration",
             "inherits": "default",
-            "configurePreset": "debug"
+            "configurePreset": "debug",
+            "configuration": "Debug"
         }
     ],
     "testPresets": [
@@ -42,6 +44,7 @@
             "name": "default",
             "displayName": "Default (Release) configuration",
             "configurePreset": "default",
+            "configuration": "Release",
             "output": {
                 "outputOnFailure": true
             }
@@ -50,6 +53,7 @@
             "name": "debug",
             "displayName": "Debug configuration",
             "inherits": "default",
+            "configuration": "Debug",
             "configurePreset": "debug"
         }
     ]
