@@ -16,7 +16,6 @@
 
 #include "libchesspch.h"
 #include "util.h"
-#include "board.h"
 
 namespace libchess::util {
     void split_string(const std::string& src, char delimiter, std::vector<std::string>& result,
@@ -73,5 +72,69 @@ namespace libchess::util {
         }
 
         return result;
+    }
+
+    bool parse_piece(char character, piece_info_t& piece, bool parse_color) {
+        char upper = (char)std::toupper((int)character);
+        switch (upper) {
+        case 'K':
+            piece.type = piece_type::king;
+            break;
+        case 'Q':
+            piece.type = piece_type::queen;
+            break;
+        case 'R':
+            piece.type = piece_type::rook;
+            break;
+        case 'N':
+            piece.type = piece_type::knight;
+            break;
+        case 'B':
+            piece.type = piece_type::bishop;
+            break;
+        case 'P':
+            piece.type = piece_type::pawn;
+            break;
+        default:
+            return false;
+        }
+
+        if (parse_color) {
+            piece.color = upper != character ? player_color::black : player_color::white;
+        }
+
+        return true;
+    }
+
+    std::optional<char> serialize_piece(const piece_info_t& piece, bool serialize_color) {
+        char piece_character;
+        switch (piece.type) {
+        case piece_type::king:
+            piece_character = 'K';
+            break;
+        case piece_type::queen:
+            piece_character = 'Q';
+            break;
+        case piece_type::rook:
+            piece_character = 'R';
+            break;
+        case piece_type::knight:
+            piece_character = 'N';
+            break;
+        case piece_type::bishop:
+            piece_character = 'B';
+            break;
+        case piece_type::pawn:
+            piece_character = 'P';
+            break;
+        default:
+            return {};
+        }
+
+        if (serialize_color && piece.color == player_color::black) {
+            piece_character = (char)std::tolower((int)piece_character);
+        }
+
+        return piece_character;
     }
 } // namespace libchess::util

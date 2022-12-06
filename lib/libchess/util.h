@@ -16,6 +16,7 @@
 
 #pragma once
 #include "coord.h"
+#include "board.h"
 
 namespace libchess::util {
     enum string_split_options : uint32_t {
@@ -31,4 +32,7 @@ namespace libchess::util {
 
     bool parse_coordinate(const std::string& coordinate, coord& result);
     std::string serialize_coordinate(const coord& position);
+
+    bool parse_piece(char character, piece_info_t& piece, bool parse_color = true);
+    std::optional<char> serialize_piece(const piece_info_t& piece, bool serialize_color = true);
 } // namespace libchess::util

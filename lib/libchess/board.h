@@ -64,6 +64,7 @@ namespace libchess {
         bool set_piece(const coord& pos, const piece_info_t& piece);
 
         data_t& get_data() { return m_data; }
+        std::string serialize();
 
     private:
         board() = default;

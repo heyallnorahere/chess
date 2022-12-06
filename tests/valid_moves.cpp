@@ -14,5 +14,20 @@
    limitations under the License.
 */
 
-#pragma once
+#include <testbed.h>
 #include <libchess.h>
+
+class valid_moves : public test_theory {
+public:
+    virtual void add_inline_data() override {
+        inline_data({  });
+    }
+
+    virtual void invoke(const std::vector<std::string>& data) override {
+        // todo: run test
+    }
+};
+
+DEFINE_ENTRYPOINT() {
+    invoke_check<valid_moves>();
+}

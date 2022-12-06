@@ -14,8 +14,27 @@
    limitations under the License.
 */
 
-#include "testbed/testbed.h"
+#include <testbed.h>
 #include <libchess.h>
+
+class valid_fen_strings : public test_theory {
+public:
+    virtual void add_inline_data() override {
+        inline_data({ "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" });
+        inline_data({ "8/8/8/8/8/8/8/8 w - - 0 1" });
+        inline_data({ "3qk3/8/8/8/8/8/8/3QK3 w - - 0 1" });
+    }
+
+    virtual void invoke(const std::vector<std::string>& data) override {
+        std::string original_fen = data[0];
+
+        auto board = libchess::board::create(original_fen);
+        assert::is_not_nullptr(board);
+
+        std::string new_fen = board->serialize();
+        assert::is_equal(new_fen, original_fen);
+    }
+};
 
 class invalid_fen_strings : public test_theory {
 public:
@@ -35,21 +54,7 @@ public:
     }
 };
 
-class valid_fen_strings : public test_theory {
-public:
-    virtual void add_inline_data() override {
-        inline_data({ "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" });
-        inline_data({ "8/8/8/8/8/8/8/8 w - - 0 1" });
-        inline_data({ "3qk3/8/8/8/8/8/8/3QK3 w - - 0 1" });
-    }
-
-    virtual void invoke(const std::vector<std::string>& data) override {
-        auto board = libchess::board::create(data[0]);
-        assert::is_not_nullptr(board);
-    }
-};
-
 DEFINE_ENTRYPOINT() {
-    invoke_test<valid_fen_strings>();
-    invoke_test<invalid_fen_strings>();
+    invoke_check<valid_fen_strings>();
+    invoke_check<invalid_fen_strings>();
 }

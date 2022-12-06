@@ -34,7 +34,7 @@ class test_theory : public test_fact {
 public:
     virtual void invoke() override;
 
-    virtual void add_inline_data() {}
+    virtual void add_inline_data() = 0;
     virtual void invoke(const std::vector<std::string>& data) = 0;
 
 protected:
@@ -48,7 +48,7 @@ private:
 };
 
 template <typename T, typename... Args>
-inline void invoke_test(Args&&... args) {
+inline void invoke_check(Args&&... args) {
     static_assert(std::is_base_of_v<test_fact, T>,
                   "the passed type is not derived from test_fact or test_theory!");
 

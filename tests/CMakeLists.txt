@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 
-file(GLOB TESTBED_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/testbed/*")
+set(TESTBED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/testbed")
+file(GLOB TESTBED_SOURCES CONFIGURE_DEPENDS "${TESTBED_DIR}/*.cpp" "${TESTBED_DIR}/*.h")
 add_library(testbed STATIC ${TESTBED_SOURCES})
-target_link_libraries(testbed PUBLIC libchess)
 set(TEST_TARGET_NAMES testbed)
+
+target_link_libraries(testbed PUBLIC libchess)
+target_include_directories(testbed PUBLIC ${TESTBED_DIR})
 
 file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 foreach (TEST_SOURCE ${TEST_SOURCES})

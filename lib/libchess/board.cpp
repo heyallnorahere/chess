@@ -28,11 +28,6 @@ namespace libchess {
         }
 
         static const std::regex free_space_regex("[1-8]");
-        static const std::unordered_map<char, piece_type> piece_characters = {
-            { 'r', piece_type::rook },  { 'n', piece_type::knight }, { 'b', piece_type::bishop },
-            { 'q', piece_type::queen }, { 'k', piece_type::king },   { 'p', piece_type::pawn }
-        };
-
         for (size_t i = 0; i < board::width; i++) {
             int32_t x = 0;
             int32_t y = (int32_t)(board::width - (i + 1));
@@ -61,16 +56,11 @@ namespace libchess {
                         result.pieces[index] = { piece_type::none };
                     }
                 } else {
-                    // character shenanigans - does this character represent a piece?
-                    char lower = (char)std::tolower((int)c);
-                    if (piece_characters.find(lower) != piece_characters.end()) {
-
-                        piece_type type = piece_characters.at(lower);
-                        player_color color = c != lower ? player_color::white : player_color::black;
-
+                    piece_info_t temp_piece;
+                    if (util::parse_piece(c, temp_piece)) {
                         coord pos(x++, y);
                         size_t index = board::get_index(pos);
-                        result.pieces[index] = { type, color };
+                        result.pieces[index] = temp_piece;
                     } else {
                         return false; // invalid character
                     }
@@ -78,7 +68,7 @@ namespace libchess {
             }
 
             if (x < board::width) {
-                return false; // rank to narrow
+                return false; // rank's too narrow
             }
         }
 
@@ -264,5 +254,48 @@ namespace libchess {
         m_data.pieces[index] = piece;
 
         return true;
+    }
+
+    std::string board::serialize() {
+        std::stringstream fen;
+
+        piece_info_t piece;
+        for (size_t i = 0; i < board::width; i++) {
+            if (i > 0) {
+                fen << "/";
+            }
+
+            uint32_t free_spaces = 0;
+            int32_t y = board::width - (i + 1);
+            for (int32_t x = 0; x < board::width; x++) {
+                auto pos = coord(x, y);
+
+                if (!get_piece(pos, &piece)) {
+                    free_spaces++;
+                    continue;
+                }
+
+                if (free_spaces > 0) {
+                    fen << free_spaces;
+                    free_spaces = 0;
+                }
+
+                auto serialized_piece = util::serialize_piece(piece);
+                if (!serialized_piece.has_value()) {
+                    throw std::runtime_error("invalid piece type!");
+                }
+
+                fen << serialized_piece.value();
+            }
+
+            // reused code - though what can you do
+            if (free_spaces > 0) {
+                fen << free_spaces;
+            }
+        }
+
+        // todo: write code????
+
+        return fen.str();
     }
 } // namespace libchess
