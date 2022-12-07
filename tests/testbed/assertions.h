@@ -58,9 +58,9 @@ namespace assert {
         std::optional<std::string> m_message;
     };
 
-    class failed_assertion : public std::exception {
+    class failed_assertion : public std::runtime_error {
     public:
-        using _base = std::exception;
+        using _base = std::runtime_error;
 
         explicit failed_assertion(const std::string& message) : _base(message.c_str()) {}
         explicit failed_assertion(const char* message) : _base(message) {}
