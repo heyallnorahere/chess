@@ -15,6 +15,7 @@
 */
 
 #pragma once
+
 #include <stdexcept>
 #include <utility>
 #include <string>
@@ -25,36 +26,73 @@
 #endif
 
 namespace assert {
-    using message_t = std::optional<std::string>;
+    class assert_message {
+    public:
+        assert_message() = default;
+        ~assert_message() = default;
 
-    inline void is_true(bool value, const message_t& message = {}) {
+        assert_message(std::nullopt_t) {}
+        assert_message(const std::string& message) : m_message(message) {}
+
+        assert_message& operator=(std::nullopt_t) {
+            m_message.reset();
+            return *this;
+        }
+
+        assert_message& operator=(const std::string& message) {
+            m_message = message;
+            return *this;
+        }
+
+        assert_message(const assert_message&) = default;
+        assert_message& operator=(const assert_message&) = default;
+
+        std::string message() const { return m_message.value(); }
+        bool has_message() const { return m_message.has_value(); }
+
+        std::string with_default(const std::string& default_message) const {
+            return m_message.value_or(default_message);
+        }
+
+    private:
+        std::optional<std::string> m_message;
+    };
+
+    class failed_assertion : public std::exception {
+    public:
+        using _base = std::exception;
+
+        explicit failed_assertion(const std::string& message) : _base(message.c_str()) {}
+        explicit failed_assertion(const char* message) : _base(message) {}
+    };
+
+    inline void is_true(bool value, const assert_message& message = {}) {
         if (!value) {
-            throw std::runtime_error("assertion failed; " +
-                                     message.value_or("value was not true!"));
+            throw failed_assertion(message.with_default("value was not true!"));
         }
     }
 
-    inline void is_false(bool value, const message_t& message = {}) {
-        is_true(!value, message.value_or("value was not false!"));
+    inline void is_false(bool value, const assert_message& message = {}) {
+        is_true(!value, message.with_default("value was not false!"));
     }
 
     template <typename T1, typename T2>
-    inline void is_equal(const T1& lhs, const T2& rhs, const message_t& message = {}) {
-        is_true(lhs == rhs, message.value_or("lhs and rhs were not equal!"));
+    inline void is_equal(const T1& lhs, const T2& rhs, const assert_message& message = {}) {
+        is_true(lhs == rhs, message.with_default("lhs and rhs were not equal!"));
     }
 
     template <typename T1, typename T2>
-    inline void is_not_equal(const T1& lhs, const T2& rhs, const message_t& message = {}) {
-        is_true(lhs != rhs, message.value_or("lhs and rhs were equal!"));
+    inline void is_not_equal(const T1& lhs, const T2& rhs, const assert_message& message = {}) {
+        is_true(lhs != rhs, message.with_default("lhs and rhs were equal!"));
     }
 
     template <typename T>
-    inline void is_nullptr(const T& value, const message_t& message = {}) {
-        is_true(value == nullptr, message.value_or("value was not nullptr!"));
+    inline void is_nullptr(const T& value, const assert_message& message = {}) {
+        is_true(value == nullptr, message.with_default("value was not nullptr!"));
     }
 
     template <typename T>
-    inline void is_not_nullptr(const T& value, const message_t& message = {}) {
-        is_true(value != nullptr, message.value_or("value was nullptr!"));
+    inline void is_not_nullptr(const T& value, const assert_message& message = {}) {
+        is_true(value != nullptr, message.with_default("value was nullptr!"));
     }
 }; // namespace assert

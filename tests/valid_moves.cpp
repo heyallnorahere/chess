@@ -18,14 +18,16 @@
 #include <libchess.h>
 
 class valid_moves : public test_theory {
-public:
+protected:
     virtual void add_inline_data() override {
-        inline_data({  });
+        inline_data({});
     }
 
     virtual void invoke(const std::vector<std::string>& data) override {
         // todo: run test
     }
+
+    virtual std::string get_check_name() override { return "valid_moves"; }
 };
 
 DEFINE_ENTRYPOINT() {

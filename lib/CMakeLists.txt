@@ -7,4 +7,5 @@ target_include_directories(libchess PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_precompile_headers(libchess PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libchesspch.h")
 set_target_properties(libchess PROPERTIES
     CXX_STANDARD 17
-    OUTPUT_NAME "chess")
+    OUTPUT_NAME "chess"
+    FOLDER "core")

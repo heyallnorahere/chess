@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "assertions.h"
+#include "tests.h"
+
 // to be instantiated by the test program
 #define DEFINE_ENTRYPOINT()                                                                        \
     void __main_alias__();                                                                         \
@@ -26,5 +29,11 @@
                                                                                                    \
     void __main_alias__()
 
-#include "tests.h"
-#include "assertions.h"
+template <typename T, typename... Args>
+inline void invoke_check(Args&&... args) {
+    static_assert(std::is_base_of_v<test_check, T>,
+                  "the passed type is not derived from test_check!");
+
+    auto check_instance = std::unique_ptr<test_check>(new T(std::forward<Args>(args)...));
+    check_instance->invoke_check();
+}

@@ -22,4 +22,5 @@ foreach (TEST_SOURCE ${TEST_SOURCES})
 endforeach()
 
 set_target_properties(${TEST_TARGET_NAMES} PROPERTIES
-    CXX_STANDARD 17)
+    CXX_STANDARD 17
+    FOLDER "tests")

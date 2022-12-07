@@ -21,23 +21,45 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <functional>
+#include <optional>
 
-class test_fact {
+class test_check {
+public:
+    test_check() = default;
+    virtual ~test_check() = default;
+
+    virtual void invoke_check() = 0;
+
+protected:
+    void catch_check(const std::function<void()>& check,
+                     const std::optional<std::string>& check_suffix = {});
+
+    virtual std::string get_check_name() = 0;
+};
+
+class test_fact : public test_check {
 public:
     test_fact() = default;
-    virtual ~test_fact() = default;
+    virtual ~test_fact() override = default;
 
+    virtual void invoke_check() override;
+
+protected:
     virtual void invoke() = 0;
 };
 
-class test_theory : public test_fact {
+class test_theory : public test_check {
 public:
-    virtual void invoke() override;
+    test_theory() = default;
+    virtual ~test_theory() override = default;
 
+    virtual void invoke_check() override;
+
+protected:
     virtual void add_inline_data() = 0;
     virtual void invoke(const std::vector<std::string>& data) = 0;
 
-protected:
     void inline_data(const std::vector<std::string>& data);
 
 private:
@@ -46,12 +68,3 @@ private:
     std::vector<std::string> m_data;
     std::vector<size_t> m_data_indices;
 };
-
-template <typename T, typename... Args>
-inline void invoke_check(Args&&... args) {
-    static_assert(std::is_base_of_v<test_fact, T>,
-                  "the passed type is not derived from test_fact or test_theory!");
-
-    auto test_instance = std::unique_ptr<test_fact>(new T(std::forward<Args>(args)...));
-    test_instance->invoke();
-}

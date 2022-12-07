@@ -217,9 +217,9 @@ namespace libchess {
         // ranks are laid out 8-1, one after another
 
         size_t x = (size_t)pos.x;
-        size_t y = board::width - ((size_t)pos.y + 1);
+        size_t y = width - ((size_t)pos.y + 1);
 
-        return (y * board::width) + x;
+        return (y * width) + x;
     }
 
     bool board::is_out_of_bounds(const coord& pos) {
@@ -294,7 +294,59 @@ namespace libchess {
             }
         }
 
-        // todo: write code????
+        char current_turn;
+        switch (m_data.current_turn) {
+        case player_color::white:
+            current_turn = 'w';
+            break;
+        case player_color::black:
+            current_turn = 'b';
+            break;
+        default:
+            throw std::runtime_error("invalid current turn!");
+        }
+
+        fen << ' ' << current_turn << ' ';
+        {
+            std::stringstream castling_availability_stream;
+            for (auto color : { player_color::white, player_color::black }) {
+                std::vector<piece_type> available_sides;
+                uint8_t availability = m_data.player_castling_availability.at(color);
+
+                if ((availability & castling_availability_king) != castling_availability_none) {
+                    available_sides.push_back(piece_type::king);
+                }
+
+                if ((availability & castling_availability_queen) != castling_availability_none) {
+                    available_sides.push_back(piece_type::queen);
+                }
+
+                for (auto side : available_sides) {
+                    piece_info_t piece_desc;
+                    piece_desc.type = side;
+                    piece_desc.color = color;
+
+                    castling_availability_stream << util::serialize_piece(piece_desc).value();
+                }
+            }
+
+            std::string castling_availability_desc = castling_availability_stream.str();
+            if (castling_availability_desc.empty()) {
+                fen << '-';
+            } else {
+                fen << castling_availability_desc;
+            }
+        }
+
+        fen << ' ';
+        if (m_data.en_passant_target.has_value()) {
+            fen << util::serialize_coordinate(m_data.en_passant_target.value());
+        } else {
+            fen << '-';
+        }
+
+        fen << ' ' << m_data.halfmove_clock;
+        fen << ' ' << m_data.fullmove_count;
 
         return fen.str();
     }

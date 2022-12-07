@@ -19,7 +19,7 @@
 
 namespace libchess {
     enum class piece_type : uint8_t { none = 0, king, queen, rook, knight, bishop, pawn };
-    enum class player_color : uint8_t { white, black };
+    enum class player_color : uint8_t { white = 0, black };
 
     enum castling_availability : uint8_t {
         castling_availability_none = 0,

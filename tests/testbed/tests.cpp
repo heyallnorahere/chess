@@ -15,9 +15,42 @@
 */
 
 #include "tests.h"
-#include <stdexcept>
+#include "assertions.h"
 
-void test_theory::invoke() {
+#include <stdexcept>
+#include <sstream>
+#include <iomanip>
+#include <iostream>
+
+void test_check::catch_check(const std::function<void()>& check,
+                             const std::optional<std::string>& check_suffix) {
+    std::string check_name = get_check_name();
+    if (check_suffix.has_value()) {
+        check_name += ": " + check_suffix.value();
+    }
+
+    std::cout << check_name << " - ";
+    std::string failure_message;
+    try {
+        check();
+
+        std::cout << "PASSED" << std::endl;
+        return;
+    } catch (const assert::failed_assertion& assertion) {
+        failure_message = std::string("assertion failed: ") + assertion.what();
+    } catch (const std::exception& exc) {
+        failure_message = std::string("exception thrown: ") + exc.what();
+    }
+
+    std::cout << "FAILED" << std::endl;
+    std::cout << "\t" << failure_message << std::endl;
+}
+
+void test_fact::invoke_check() {
+    catch_check([this]() mutable { invoke(); });
+}
+
+void test_theory::invoke_check() {
     clear_inline_data();
     add_inline_data();
 
@@ -44,7 +77,19 @@ void test_theory::invoke() {
         }
 
         std::vector<std::string> inline_data(start_it, end_it);
-        invoke(inline_data);
+        std::stringstream suffix;
+
+        suffix << "{ ";
+        for (size_t i = 0; i < inline_data.size(); i++) {
+            if (i > 0) {
+                suffix << ", ";
+            }
+
+            suffix << std::quoted(inline_data[i]);
+        }
+
+        suffix << " }";
+        catch_check([&]() { invoke(inline_data); }, suffix.str());
     }
 }
 
