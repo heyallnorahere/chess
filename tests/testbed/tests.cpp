@@ -26,8 +26,8 @@ static test_check::stats_t s_check_stats;
 test_check::stats_t& test_check::get_stats() { return s_check_stats; }
 
 int test_check::test_cleanup() {
-    std::cout << s_check_stats.checks_passed << " passed ; ";
-    std::cout << s_check_stats.checks_failed << " failed";
+    std::cout << s_check_stats.checks_passed << " checks passed ; ";
+    std::cout << s_check_stats.checks_failed << " checks failed";
 
     std::cout << std::endl;
     return s_check_stats.checks_failed > 0 ? 1 : 0;

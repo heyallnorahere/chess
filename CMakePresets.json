@@ -45,8 +45,12 @@
             "displayName": "Default (Release) configuration",
             "configurePreset": "default",
             "configuration": "Release",
+            "execution": {
+                "jobs": 8
+            },
             "output": {
-                "outputOnFailure": true
+                "outputOnFailure": true,
+                "verbosity": "verbose"
             }
         },
         {
