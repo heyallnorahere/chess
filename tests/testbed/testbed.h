@@ -24,7 +24,7 @@
     void __main_alias__();                                                                         \
     int main(int argc, const char** argv) {                                                        \
         __main_alias__();                                                                          \
-        return 0;                                                                                  \
+        return test_check::test_cleanup();                                                         \
     }                                                                                              \
                                                                                                    \
     void __main_alias__()

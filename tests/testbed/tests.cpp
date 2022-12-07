@@ -22,6 +22,17 @@
 #include <iomanip>
 #include <iostream>
 
+static test_check::stats_t s_check_stats;
+test_check::stats_t& test_check::get_stats() { return s_check_stats; }
+
+int test_check::test_cleanup() {
+    std::cout << s_check_stats.checks_passed << " passed ; ";
+    std::cout << s_check_stats.checks_failed << " failed";
+
+    std::cout << std::endl;
+    return s_check_stats.checks_failed > 0 ? 1 : 0;
+}
+
 void test_check::catch_check(const std::function<void()>& check,
                              const std::optional<std::string>& check_suffix) {
     std::string check_name = get_check_name();
@@ -33,8 +44,9 @@ void test_check::catch_check(const std::function<void()>& check,
     std::string failure_message;
     try {
         check();
-
         std::cout << "PASSED" << std::endl;
+
+        s_check_stats.checks_passed++;
         return;
     } catch (const assert::failed_assertion& assertion) {
         failure_message = std::string("assertion failed: ") + assertion.what();
@@ -44,6 +56,8 @@ void test_check::catch_check(const std::function<void()>& check,
 
     std::cout << "FAILED" << std::endl;
     std::cout << "\t" << failure_message << std::endl;
+
+    s_check_stats.checks_failed++;
 }
 
 void test_fact::invoke_check() {

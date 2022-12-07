@@ -26,6 +26,13 @@
 
 class test_check {
 public:
+    struct stats_t {
+        uint32_t checks_passed = 0, checks_failed = 0;
+    };
+
+    static stats_t& get_stats();
+    static int test_cleanup();
+
     test_check() = default;
     virtual ~test_check() = default;
 
