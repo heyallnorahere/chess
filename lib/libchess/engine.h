@@ -26,9 +26,12 @@ namespace libchess {
     struct piece_query_t {
         std::optional<piece_type> type;
         std::optional<player_color> color;
+        std::optional<int32_t> x, y;
+
+        bool (*filter)(const piece_info_t&) = nullptr;
     };
 
-    using piece_capture_callback_t = void(*)(const piece_info_t&, void*);
+    using piece_capture_callback_t = void (*)(const piece_info_t&, void*);
     class engine {
     public:
         engine() = default;
@@ -57,6 +60,9 @@ namespace libchess {
         void clear_cache();
 
     private:
+        void compute_check_internal(player_color color, const std::vector<coord>& kings,
+                                    std::vector<coord>& pieces);
+
         std::shared_ptr<board> m_board;
         board::data_t* m_board_data = nullptr; // convenience
 

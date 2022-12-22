@@ -58,11 +58,21 @@ namespace libchess {
                     if (piece.type != query.type.value()) {
                         continue;
                     }
-                } else if (piece.type == piece_type::none) {
-                    continue;
                 }
 
                 if (query.color.has_value() && piece.color != query.color.value()) {
+                    continue;
+                }
+
+                if (query.x.has_value() && query.x != x) {
+                    continue;
+                }
+
+                if (query.y.has_value() && query.y != y) {
+                    continue;
+                }
+
+                if (query.filter != nullptr && !(query.filter(piece))) {
                     continue;
                 }
 
@@ -88,25 +98,7 @@ namespace libchess {
         find_pieces(query, kings);
 
         if (kings.size() > 0) {
-            player_color opposing =
-                color != player_color::white ? player_color::white : player_color::black;
-
-            query.type.reset();
-            query.color = opposing;
-
-            std::vector<coord> opposing_pieces;
-            find_pieces(query, opposing_pieces);
-
-            for (const auto& piece_pos : opposing_pieces) {
-                std::list<coord> legal_moves;
-                compute_legal_moves(piece_pos, legal_moves);
-
-                for (const auto& move : legal_moves) {
-                    if (std::find(kings.begin(), kings.end(), move) != kings.end()) {
-                        pieces.push_back(piece_pos);
-                    }
-                }
-            }
+            compute_check_internal(color, kings, pieces);
         }
 
         m_checking_pieces_cache.insert(std::make_pair(color, pieces));
@@ -158,7 +150,49 @@ namespace libchess {
                 }
             }
 
-            // todo: castling (OH BOY)
+            uint8_t castling_flags = m_board_data->player_castling_availability.at(piece.color);
+            std::vector<std::tuple<int32_t, int32_t>> castling_directions;
+
+            if ((castling_flags & castling_availability_queen) != castling_availability_none) {
+                castling_directions.push_back(std::make_tuple(-1, -1));
+            }
+
+            if ((castling_flags & castling_availability_king) != castling_availability_none) {
+                castling_directions.push_back(std::make_tuple(1, (int32_t)board::width));
+            }
+
+            for (auto [direction, limit] : castling_directions) {
+                bool castling_valid = false;
+                for (int32_t x = pos.x + direction; x != limit; x += direction) {
+                    piece_info_t current_piece;
+                    if (m_board->get_piece(coord(x, pos.y), &current_piece)) {
+                        if (current_piece.type == piece_type::rook) {
+                            castling_valid = true;
+                        } else {
+                            castling_valid = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (castling_valid) {
+                    coord dst = pos + coord(direction * 2, 0);
+
+                    std::vector<coord> king_positions;
+                    for (int32_t x = pos.x; x != dst.x + direction; x += direction) {
+                        king_positions.push_back(coord(x, pos.y));
+                    }
+
+                    std::vector<coord> checking_pieces;
+                    if (piece.color == m_board_data->current_turn) {
+                        compute_check_internal(piece.color, king_positions, checking_pieces);
+                    }
+
+                    if (checking_pieces.empty()) {
+                        destinations.push_back(dst);
+                    }
+                }
+            }
         } break;
         case piece_type::queen:
             movement_type = piece_movement_type_rook | piece_movement_type_bishop;
@@ -218,8 +252,9 @@ namespace libchess {
                 int32_t capture_direction = direction_factors[i];
                 coord capture_step = single_step + coord(capture_direction, 0);
 
-                if (m_board->get_piece(capture_step, &temp_piece) &&
-                    temp_piece.color != piece.color) {
+                if ((m_board->get_piece(capture_step, &temp_piece) &&
+                     temp_piece.color != piece.color) ||
+                    m_board_data->en_passant_target == capture_step) {
                     destinations.push_back(capture_step);
                 }
             }
@@ -285,6 +320,7 @@ namespace libchess {
                 piece_info_t temp_piece;
                 if (m_board->get_piece(move.destination, &temp_piece) &&
                     temp_piece.type == piece_type::king) {
+                    it++;
                     continue;
                 }
 
@@ -333,8 +369,15 @@ namespace libchess {
             reset_halfmove_clock = true;
         }
 
+        coord capture_position;
+        if (piece.type == piece_type::pawn && m_board_data->en_passant_target == move.destination) {
+            capture_position = coord(move.destination.x, move.position.y);
+        } else {
+            capture_position = move.destination;
+        }
+
         piece_info_t captured;
-        if (m_board->get_piece(move.destination, &captured)) {
+        if (m_board->get_piece(capture_position, &captured)) {
             if (m_capture_callback != nullptr) {
                 m_capture_callback(captured, m_callback_data);
             }
@@ -345,6 +388,13 @@ namespace libchess {
         clear_cache();
         m_board->set_piece(move.position, { piece_type::none });
         m_board->set_piece(move.destination, piece);
+
+        coord delta = move.destination - move.position;
+        if (piece.type == piece_type::pawn && std::abs(delta.y) == 2) {
+            m_board_data->en_passant_target = move.position + coord(0, delta.y / 2);
+        } else {
+            m_board_data->en_passant_target.reset();
+        }
 
         // a little spaghetti-y
         if (advance_turn) {
@@ -370,5 +420,28 @@ namespace libchess {
         m_checking_pieces_cache.clear();
 
         // todo: clear caches as they're added
+    }
+
+    void engine::compute_check_internal(player_color color, const std::vector<coord>& kings,
+                                        std::vector<coord>& pieces) {
+        player_color opposing =
+            color != player_color::white ? player_color::white : player_color::black;
+
+        piece_query_t query;
+        query.color = opposing;
+
+        std::vector<coord> opposing_pieces;
+        find_pieces(query, opposing_pieces);
+
+        for (const auto& piece_pos : opposing_pieces) {
+            std::list<coord> legal_moves;
+            compute_legal_moves(piece_pos, legal_moves);
+
+            for (const auto& move : legal_moves) {
+                if (std::find(kings.begin(), kings.end(), move) != kings.end()) {
+                    pieces.push_back(piece_pos);
+                }
+            }
+        }
     }
 } // namespace libchess
