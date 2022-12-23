@@ -397,9 +397,9 @@ namespace libchess {
         }
 
         if (piece.type == piece_type::rook) {
-            static const std::map<castle_side, int32_t> starting_rook_positions = {
-                { castle_side::castle_side_queen, 0 },
-                { castle_side::castle_side_king, board::width - 1 }
+            static const std::vector<std::tuple<castle_side, int32_t>> starting_rook_positions = {
+                std::make_tuple(castle_side::castle_side_queen, (int32_t)0),
+                std::make_tuple(castle_side::castle_side_king, (int32_t)board::width - 1)
             };
 
             int32_t y = piece.color == player_color::white ? 0 : (board::width - 1);
