@@ -97,6 +97,7 @@ protected:
         inline_data({ "b1 a3" });
         inline_data({ "d5 e6", "en_passant" });
         inline_data({ "e1 g1", "castling" });
+        inline_data({ "f1 g1", "check" });
     }
 
     virtual void invoke(const std::vector<std::string>& data) override {
@@ -120,7 +121,10 @@ protected:
         inline_data({ "c3 c4", "pawn_pressure" });
         inline_data({ "c3 c5", "pawn_pressure" });
         inline_data({ "d5 e6", "en_passant_illegal" });
-        inline_data({ "e1 g1", "castling_interrupted" });
+        inline_data({ "e1 g1" });
+        inline_data({ "e1 g1", "castling_intercepted" });
+        inline_data({ "f1 g2", "check" });
+        inline_data({ "f2 f4", "check" });
     }
 
     virtual void invoke(const std::vector<std::string>& data) override {
@@ -133,25 +137,64 @@ private:
     const board_position_set* m_positions;
 };
 
+class voided_castling_availability : public test_theory {
+protected:
+    virtual void add_inline_data() override {
+        inline_data({ "a1 b1", "k" });
+        inline_data({ "h1 g1", "q" });
+    };
+
+    virtual void invoke(const std::vector<std::string>& data) override {
+        auto board = libchess::board::create("1k6/8/8/8/8/8/8/R3K2R w KQ - 0 1");
+        assert::is_not_nullptr(board);
+
+        libchess::move_t move;
+        assert::is_true(parse_move(data[0], move));
+
+        libchess::castle_side expected;
+        switch (data[1][0]) {
+        case 'k':
+            expected = libchess::castle_side_king;
+            break;
+        case 'q':
+            expected = libchess::castle_side_queen;
+            break;
+        default:
+            assert::throw_error();
+            break;
+        }
+
+        libchess::engine engine(board);
+        assert::is_true(engine.commit_move(move));
+
+        auto actual = board->get_data().player_castling_availability[libchess::player_color::white];
+        assert::is_equal(actual, expected);
+    }
+
+    virtual std::string get_check_name() override { return "voided_castling_availability"; }
+};
+
 DEFINE_ENTRYPOINT() {
     board_position_set positions;
 
+    positions.set_fen("check", "k7/8/8/8/8/7q/5P2/5K2 w - - 0 1");
     positions.set_fen("pawn_pressure",
-                      "rnb1kbnr/pp1ppppp/2p5/q7/3P4/2P5/PP2PPPP/RNBQKBNR w KQkq - 0 3");
+                      "rnb1kbnr/pp1ppppp/2p5/q7/3P4/2P5/PP2PPPP/RNBQKBNR w KQkq - 0 1");
 
     positions.set_fen("en_passant",
-                      "rnbqkbnr/pp1p1ppp/8/2pPp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 3");
+                      "rnbqkbnr/pp1p1ppp/8/2pPp3/8/8/PPP1PPPP/RNBQKBNR w KQkq e6 0 1");
 
     positions.set_fen("en_passant_illegal",
-                      "rnbqkbnr/pppp1ppp/8/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 3");
+                      "rnbqkbnr/pppp1ppp/8/3Pp3/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1");
 
-    positions.set_fen("castling", "rnbqkbnr/pppppppp/8/8/8/5NP1/PPPPPPBP/RNBQK2R w KQkq - 0 3");
-    positions.set_fen("castling_interrupted",
-                      "1nbqkbnr/pppppppp/6r1/8/8/8/PPPP4/RNBQK2R w KQkq - 0 3");
+    positions.set_fen("castling", "rnbqkbnr/pppppppp/8/8/8/5NP1/PPPPPPBP/RNBQK2R w KQkq - 0 1");
+    positions.set_fen("castling_intercepted",
+                      "1nbqkbnr/pppppppp/6r1/8/8/8/PPPP4/RNBQK2R w KQkq - 0 1");
 
     positions.set_fen("castling_unavailable",
-                      "rnbqkbnr/pppppppp/8/8/8/5NP1/PPPPPPBP/RNBQK2R w kq - 0 3");
+                      "rnbqkbnr/pppppppp/8/8/8/5NP1/PPPPPPBP/RNBQK2R w kq - 0 1");
 
     invoke_check<legal_moves>(positions);
     invoke_check<illegal_moves>(positions);
+    invoke_check<voided_castling_availability>();
 }

@@ -113,20 +113,20 @@ namespace libchess {
 
         // set defaults
         result.player_castling_availability[player_color::white] =
-            result.player_castling_availability[player_color::black] = castling_availability_none;
+            result.player_castling_availability[player_color::black] = castle_side_none;
 
         if (castling_segment != "-") {
             for (char c : castling_segment) {
                 char lower = (char)std::tolower((int)c);
                 player_color color = c != lower ? player_color::white : player_color::black;
 
-                castling_availability flag;
+                castle_side flag;
                 switch (lower) {
                 case 'k':
-                    flag = castling_availability_king;
+                    flag = castle_side_king;
                     break;
                 case 'q':
-                    flag = castling_availability_queen;
+                    flag = castle_side_queen;
                     break;
                 default:
                     return false;
@@ -177,7 +177,7 @@ namespace libchess {
 
         _board->m_data.player_castling_availability[player_color::white] =
             _board->m_data.player_castling_availability[player_color::black] =
-                castling_availability_king | castling_availability_queen;
+                castle_side_king | castle_side_queen;
 
         return std::shared_ptr<board>(_board);
     }
@@ -313,11 +313,11 @@ namespace libchess {
                 std::vector<piece_type> available_sides;
                 uint8_t availability = m_data.player_castling_availability.at(color);
 
-                if ((availability & castling_availability_king) != castling_availability_none) {
+                if ((availability & castle_side_king) != castle_side_none) {
                     available_sides.push_back(piece_type::king);
                 }
 
-                if ((availability & castling_availability_queen) != castling_availability_none) {
+                if ((availability & castle_side_queen) != castle_side_none) {
                     available_sides.push_back(piece_type::queen);
                 }
 

@@ -72,7 +72,7 @@ namespace libchess {
                     continue;
                 }
 
-                if (query.filter != nullptr && !(query.filter(piece))) {
+                if (query.filter != nullptr && !(query.filter(piece, query.filter_data))) {
                     continue;
                 }
 
@@ -153,11 +153,11 @@ namespace libchess {
             uint8_t castling_flags = m_board_data->player_castling_availability.at(piece.color);
             std::vector<std::tuple<int32_t, int32_t>> castling_directions;
 
-            if ((castling_flags & castling_availability_queen) != castling_availability_none) {
+            if ((castling_flags & castle_side_queen) != castle_side_none) {
                 castling_directions.push_back(std::make_tuple(-1, -1));
             }
 
-            if ((castling_flags & castling_availability_king) != castling_availability_none) {
+            if ((castling_flags & castle_side_king) != castle_side_none) {
                 castling_directions.push_back(std::make_tuple(1, (int32_t)board::width));
             }
 
@@ -394,6 +394,21 @@ namespace libchess {
             m_board_data->en_passant_target = move.position + coord(0, delta.y / 2);
         } else {
             m_board_data->en_passant_target.reset();
+        }
+
+        if (piece.type == piece_type::rook) {
+            static const std::map<castle_side, int32_t> starting_rook_positions = {
+                { castle_side::castle_side_queen, 0 },
+                { castle_side::castle_side_king, board::width - 1 }
+            };
+
+            int32_t y = piece.color == player_color::white ? 0 : (board::width - 1);
+            for (auto [side, x] : starting_rook_positions) {
+                if (move.position == coord(x, y)) {
+                    m_board_data->player_castling_availability[piece.color] &= ~side;
+                    break;
+                }
+            }
         }
 
         // a little spaghetti-y

@@ -21,10 +21,10 @@ namespace libchess {
     enum class piece_type : uint8_t { none = 0, king, queen, rook, knight, bishop, pawn };
     enum class player_color : uint8_t { white = 0, black };
 
-    enum castling_availability : uint8_t {
-        castling_availability_none = 0,
-        castling_availability_king = (1 << 0),
-        castling_availability_queen = (1 << 1)
+    enum castle_side : uint8_t {
+        castle_side_none = 0,
+        castle_side_king = (1 << 0),
+        castle_side_queen = (1 << 1)
     };
 
     struct piece_info_t {

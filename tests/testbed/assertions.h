@@ -95,4 +95,8 @@ namespace assert {
     inline void is_not_nullptr(const T& value, const assert_message& message = {}) {
         is_true(value != nullptr, message.with_default("value was nullptr!"));
     }
+
+    inline void throw_error(const assert_message& message = {}) {
+        is_true(false, message.with_default("statement should not be hit!"));
+    }
 }; // namespace assert
