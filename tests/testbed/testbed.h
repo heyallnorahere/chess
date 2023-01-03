@@ -23,6 +23,7 @@
 #define DEFINE_ENTRYPOINT()                                                                        \
     void __main_alias__();                                                                         \
     int main(int argc, const char** argv) {                                                        \
+        test_check::test_init();                                                                   \
         __main_alias__();                                                                          \
         return test_check::test_cleanup();                                                         \
     }                                                                                              \

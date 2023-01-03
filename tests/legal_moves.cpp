@@ -174,6 +174,31 @@ protected:
     virtual std::string get_check_name() override { return "voided_castling_availability"; }
 };
 
+class checkmate : public test_theory {
+protected:
+    virtual void add_inline_data() override {
+        inline_data({ "y", "k4r2/8/8/8/8/8/3PPq2/3QK3 w - - 0 1" });
+        inline_data({ "n", "k4r2/8/8/8/8/8/4Pq2/3QK3 w - - 0 1" });
+        inline_data({ "y", "k7/8/8/8/4n3/8/4Pq2/3QK3 w - - 0 1" });
+    }
+
+    virtual void invoke(const std::vector<std::string>& data) override {
+        auto board = libchess::board::create(data[1]);
+        assert::is_not_nullptr(board);
+
+        libchess::engine engine(board);
+        bool is_mate = engine.compute_checkmate(board->get_data().current_turn);
+
+        if (data[0] == "y") {
+            assert::is_true(is_mate);
+        } else {
+            assert::is_false(is_mate);
+        }
+    }
+
+    virtual std::string get_check_name() override { return "checkmate"; }
+};
+
 DEFINE_ENTRYPOINT() {
     board_position_set positions;
 
@@ -197,4 +222,5 @@ DEFINE_ENTRYPOINT() {
     invoke_check<legal_moves>(positions);
     invoke_check<illegal_moves>(positions);
     invoke_check<voided_castling_availability>();
+    invoke_check<checkmate>();
 }

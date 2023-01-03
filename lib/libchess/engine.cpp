@@ -22,11 +22,10 @@ namespace libchess {
     void engine::set_board(std::shared_ptr<board> _board) {
         if (m_board != _board) {
             clear_cache();
-
             m_board = _board;
+
+            // should, in theory, return nullptr if m_board is nullptr as well, but just to be safe
             if (m_board) {
-                // should, in theory, return nullptr if m_board is nullptr as well, but just to be
-                // safe
                 m_board_data = &m_board->get_data();
             } else {
                 m_board_data = nullptr;
@@ -81,13 +80,13 @@ namespace libchess {
         }
     }
 
-    void engine::compute_check(player_color color, std::vector<coord>& pieces) {
+    bool engine::compute_check(player_color color, std::vector<coord>& pieces) {
         pieces.clear();
         if (m_checking_pieces_cache.find(color) != m_checking_pieces_cache.end()) {
             const auto& checking_pieces = m_checking_pieces_cache.at(color);
             pieces.insert(pieces.end(), checking_pieces.begin(), checking_pieces.end());
 
-            return;
+            return !pieces.empty();
         }
 
         piece_query_t query;
@@ -102,6 +101,37 @@ namespace libchess {
         }
 
         m_checking_pieces_cache.insert(std::make_pair(color, pieces));
+        return !pieces.empty();
+    }
+
+    bool engine::compute_checkmate(player_color color) {
+        if (color != m_board_data->current_turn) {
+            return false;
+        }
+
+        if (m_checkmate_cache.has_value()) {
+            return m_checkmate_cache.value();
+        }
+
+        piece_query_t query;
+        query.color = color;
+
+        std::vector<coord> pieces;
+        find_pieces(query, pieces);
+
+        bool checkmate = true;
+        for (const auto& piece : pieces) {
+            std::list<coord> legal_moves;
+            compute_legal_moves(piece, legal_moves);
+
+            if (!legal_moves.empty()) {
+                checkmate = false;
+                break;
+            }
+        }
+
+        m_checkmate_cache = checkmate;
+        return checkmate;
     }
 
     enum piece_movement_type : uint32_t {
@@ -143,6 +173,11 @@ namespace libchess {
 
                     coord dst = pos + coord(x_factor, y_factor);
                     if (dst.taxicab_length() == 0 || board::is_out_of_bounds(dst)) {
+                        continue;
+                    }
+
+                    piece_info_t temp;
+                    if (m_board->get_piece(dst, &temp) && temp.color == piece.color) {
                         continue;
                     }
 
@@ -433,6 +468,7 @@ namespace libchess {
     void engine::clear_cache() {
         m_legal_move_cache.clear();
         m_checking_pieces_cache.clear();
+        m_checkmate_cache.reset();
 
         // todo: clear caches as they're added
     }

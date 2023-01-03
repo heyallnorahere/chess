@@ -21,16 +21,54 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 
-static test_check::stats_t s_check_stats;
-test_check::stats_t& test_check::get_stats() { return s_check_stats; }
+enum class test_result {
+    passed,
+    failed
+};
+
+class check_stats {
+public:
+    check_stats() = default;
+    ~check_stats() = default;
+
+    uint32_t& operator[](test_result key) { return m_result_counts[key]; }
+
+    uint32_t operator[](test_result key) const {
+        if (m_result_counts.find(key) != m_result_counts.end()) {
+            return m_result_counts.at(key);
+        } else {
+            return 0;
+        }
+    }
+
+    uint32_t cumulative() const {
+        uint32_t result = 0;
+        for (auto [key, value] : m_result_counts) {
+            result += value;
+        }
+
+        return result;
+    }
+
+    void reset() { m_result_counts.clear(); }
+
+private:
+    std::map<test_result, uint32_t> m_result_counts;
+};
+
+static check_stats s_check_stats;
+void test_check::test_init() {
+    s_check_stats.reset();
+}
 
 int test_check::test_cleanup() {
-    std::cout << s_check_stats.checks_passed << " checks passed ; ";
-    std::cout << s_check_stats.checks_failed << " checks failed";
+    std::cout << s_check_stats[test_result::passed] << " checks passed ; ";
+    std::cout << s_check_stats[test_result::failed] << " checks failed ; ";
+    std::cout << s_check_stats.cumulative() << " checks ran" << std::endl;
 
-    std::cout << std::endl;
-    return s_check_stats.checks_failed > 0 ? 1 : 0;
+    return s_check_stats[test_result::failed] > 0 ? 1 : 0;
 }
 
 void test_check::catch_check(const std::function<void()>& check,
@@ -46,7 +84,7 @@ void test_check::catch_check(const std::function<void()>& check,
         check();
         std::cout << "PASSED" << std::endl;
 
-        s_check_stats.checks_passed++;
+        s_check_stats[test_result::passed]++;
         return;
     } catch (const assert::failed_assertion& assertion) {
         failure_message = std::string("assertion failed: ") + assertion.what();
@@ -57,7 +95,7 @@ void test_check::catch_check(const std::function<void()>& check,
     std::cout << "FAILED" << std::endl;
     std::cout << "\t" << failure_message << std::endl;
 
-    s_check_stats.checks_failed++;
+    s_check_stats[test_result::failed]++;
 }
 
 void test_fact::invoke_check() {
