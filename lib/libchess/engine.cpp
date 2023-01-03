@@ -417,6 +417,7 @@ namespace libchess {
                 m_capture_callback(captured, m_callback_data);
             }
 
+            m_board->set_piece(capture_position, { piece_type::none });
             reset_halfmove_clock = true;
         }
 

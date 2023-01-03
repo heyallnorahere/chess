@@ -199,6 +199,42 @@ protected:
     virtual std::string get_check_name() override { return "checkmate"; }
 };
 
+class en_passant : public test_theory {
+protected:
+    virtual void add_inline_data() override {
+        inline_data({ "d5 e6", "k7/8/8/3Pp3/8/8/8/K7 w - e6 0 1" });
+        inline_data({ "e5 d6", "k7/8/8/3pP3/8/8/8/K7 w - d6 0 1" });
+        inline_data({ "d4 e3", "k7/8/8/8/3pP3/8/8/K7 b - e3 0 1" });
+        inline_data({ "e4 d3", "k7/8/8/8/3Pp3/8/8/K7 b - d3 0 1" });
+    }
+
+    virtual void invoke(const std::vector<std::string>& data) override {
+        auto board = libchess::board::create(data[1]);
+        assert::is_not_nullptr(board);
+
+        libchess::move_t move;
+        assert::is_true(parse_move(data[0], move));
+
+        libchess::piece_info_t piece;
+        assert::is_true(board->get_piece(move.position, &piece));
+        assert::is_equal(piece.color, board->get_data().current_turn);
+
+        libchess::engine engine(board);
+        assert::is_true(engine.commit_move(move));
+
+        auto taken = libchess::coord(move.destination.x, move.position.y);
+        assert::is_false(board->get_piece(taken, nullptr));
+
+        libchess::piece_info_t destination_piece;
+        assert::is_true(board->get_piece(move.destination, &destination_piece));
+
+        assert::is_equal(piece.type, destination_piece.type);
+        assert::is_equal(piece.color, destination_piece.color);
+    }
+
+    virtual std::string get_check_name() override { return "en_passant"; }
+};
+
 DEFINE_ENTRYPOINT() {
     board_position_set positions;
 
@@ -221,6 +257,8 @@ DEFINE_ENTRYPOINT() {
 
     invoke_check<legal_moves>(positions);
     invoke_check<illegal_moves>(positions);
+
     invoke_check<voided_castling_availability>();
     invoke_check<checkmate>();
+    invoke_check<en_passant>();
 }
