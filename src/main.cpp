@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 Nora Beda
+   Copyright 2022-2023 Nora Beda
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
 */
 
 #include "pch.h"
-#include <iostream>
+#include "renderer.h"
+#include <cstdio>
 
+/*
 static bool dump_board(std::shared_ptr<libchess::board> board) {
     libchess::piece_info_t piece;
     for (int32_t y = (int32_t)(libchess::board::width - 1); y >= 0; y--) {
@@ -30,8 +32,11 @@ static bool dump_board(std::shared_ptr<libchess::board> board) {
 
     return true;
 }
+*/
 
+using namespace libchess::console;
 int main(int argc, const char** argv) {
+    /*
     std::shared_ptr<libchess::board> board;
     if (argc > 1) {
         board = libchess::board::create(argv[1]);
@@ -44,4 +49,13 @@ int main(int argc, const char** argv) {
     }
 
     return dump_board(board) ? 0 : 1;
+    */
+
+    renderer::init(800, 600);
+    renderer::render(libchess::coord(10, 10), 'F', color_cyan, color_red);
+    renderer::flush();
+
+    std::cin.get();
+    renderer::shutdown();
+    return 0;
 }
