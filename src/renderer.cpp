@@ -16,6 +16,7 @@
 
 #include "pch.h"
 #include "renderer.h"
+#include "renderer/backends.h"
 
 namespace libchess::console {
     struct cell_info_t {
@@ -28,108 +29,18 @@ namespace libchess::console {
         size_t buffer_size;
         int32_t width, height;
 
-        std::string escape_sequence;
+        renderer_backend_t backend;
         std::unordered_set<coord> rendered_indices;
     };
 
     static std::unique_ptr<renderer_info_t> s_renderer_info;
-    static void save_screen() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // no implementation i dont think
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "?47h";
-#endif
-    }
-
-    static void restore_screen() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // still nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "?47l";
-#endif
-    }
-
-    static void save_cursor_pos() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "s";
-#endif
-    }
-
-    static void restore_cursor_pos() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "u";
-#endif
-    }
-
-    static void set_color(uint32_t fg, uint32_t bg) {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "3" << fg << ";4" << bg << "m";
-#endif
-    }
-
-    static void reset_color() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "0m";
-#endif
-    }
-
-    static void set_cursor_pos(const coord& pos) {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << pos.y << ";" << pos.x << "H";
-#endif
-    }
-
-    static void advance_cursor_line() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "1E";
-#endif
-    }
-
-    static void disable_cursor() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "?25l";
-#endif
-    }
-
-    static void enable_cursor() {
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "?25h";
-#endif
-    }
-
-    static void flush_console() {
-#ifdef LIBCHESS_PLATFORM_UNIX
-        std::cout << std::flush;
-#else
-        // nothing
-#endif
-    }
-
     void renderer::init(int32_t width, int32_t height) {
         if (s_renderer_info) {
             throw std::runtime_error("renderer already initialized!");
         }
 
         s_renderer_info = std::make_unique<renderer_info_t>();
-#ifdef LIBCHESS_PLATFORM_UNIX
-        s_renderer_info->escape_sequence = "\x1b[";
-#endif
+        get_renderer_backend(s_renderer_info->backend);
 
         s_renderer_info->width = width;
         s_renderer_info->height = height;
@@ -141,21 +52,21 @@ namespace libchess::console {
             throw std::runtime_error("failed to allocate renderer buffer!");
         }
 
-        save_cursor_pos();
-        save_screen();
-        clear_screen();
-        disable_cursor();
-        flush_console();
+        s_renderer_info->backend.save_cursor_pos();
+        s_renderer_info->backend.save_screen();
+        s_renderer_info->backend.clear_screen();
+        s_renderer_info->backend.disable_cursor();
+        s_renderer_info->backend.flush_console();
     }
 
     void renderer::shutdown() {
         free(s_renderer_info->buffer);
 
-        reset_color();
-        enable_cursor();
-        restore_screen();
-        restore_cursor_pos();
-        flush_console();
+        s_renderer_info->backend.reset_color();
+        s_renderer_info->backend.enable_cursor();
+        s_renderer_info->backend.restore_screen();
+        s_renderer_info->backend.restore_cursor_pos();
+        s_renderer_info->backend.flush_console();
 
         s_renderer_info.reset();
     }
@@ -168,15 +79,10 @@ namespace libchess::console {
             s_renderer_info->buffer[i].bg = color_default;
         }
 
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-        // nothing
-#elif defined(LIBCHESS_PLATFORM_UNIX)
-        std::cout << s_renderer_info->escape_sequence << "J";
-#endif
-
-        set_cursor_pos(coord(0, 0));
-        set_color(color_default, color_default);
-        flush_console();
+        s_renderer_info->backend.clear_screen();
+        s_renderer_info->backend.set_cursor_pos(coord(0, 0));
+        s_renderer_info->backend.set_color(color_default, color_default);
+        s_renderer_info->backend.flush_console();
     }
 
     void renderer::flush() {
@@ -184,8 +90,8 @@ namespace libchess::console {
             size_t index = ((size_t)pos.y * s_renderer_info->width) + pos.x;
             const auto& cell = s_renderer_info->buffer[index];
 
-            set_cursor_pos(pos);
-            set_color(cell.fg, cell.bg);
+            s_renderer_info->backend.set_cursor_pos(pos);
+            s_renderer_info->backend.set_color(cell.fg, cell.bg);
 
             std::cout << cell.character;
 #ifdef LIBCHESS_PLATFORM_WINDOWS
@@ -193,7 +99,7 @@ namespace libchess::console {
 #endif
         }
 
-        flush_console();
+        s_renderer_info->backend.flush_console();
         s_renderer_info->rendered_indices.clear();
     }
 

@@ -14,16 +14,11 @@
    limitations under the License.
 */
 
-#pragma once
-#include <libchess.h>
+#include "pch.h"
+#include "backends.h"
 
-#include <cstdint> // int32_t, uint32_t, etc.
-#include <stddef.h> // ::size_t
-#include <cstring> // memset
-
-#include <vector>
-#include <memory>
-#include <map>
-#include <iostream>
-#include <stdexcept>
-#include <unordered_set>
+namespace libchess::console {
+    void populate_backend_functions(renderer_backend_t& backend) {
+        // nothing
+    }
+} // namespace libchess::console

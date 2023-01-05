@@ -16,7 +16,6 @@
 
 #include "pch.h"
 #include "renderer.h"
-#include <cstdio>
 
 /*
 static bool dump_board(std::shared_ptr<libchess::board> board) {
