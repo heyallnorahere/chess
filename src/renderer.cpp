@@ -57,11 +57,13 @@ namespace libchess::console {
         s_renderer_info->backend.clear_screen();
         s_renderer_info->backend.disable_cursor();
         s_renderer_info->backend.flush_console();
+        s_renderer_info->backend.setup_input_capture();
     }
 
     void renderer::shutdown() {
         free(s_renderer_info->buffer);
 
+        s_renderer_info->backend.cleanup_input_capture();
         s_renderer_info->backend.reset_color();
         s_renderer_info->backend.enable_cursor();
         s_renderer_info->backend.restore_screen();

@@ -17,36 +17,66 @@
 #include "pch.h"
 #include "backends.h"
 
+#include <termios.h>
+#include <unistd.h>
+
 namespace libchess::console {
-    static const std::string terminal_escape_sequence = "\x1b[";
+    static const std::string s_terminal_escape_sequence = "\x1b[";
+    static std::unique_ptr<termios> s_normal_terminal_state;
 
-    static void unix_save_screen() { std::cout << terminal_escape_sequence << "?47h"; }
+    static void unix_save_screen() { std::cout << s_terminal_escape_sequence << "?47h"; }
+    static void unix_restore_screen() { std::cout << s_terminal_escape_sequence << "?47l"; }
+    static void unix_clear_screen() { std::cout << s_terminal_escape_sequence << "J"; }
 
-    static void unix_restore_screen() { std::cout << terminal_escape_sequence << "?47l"; }
-
-    static void unix_clear_screen() { std::cout << terminal_escape_sequence << "J"; }
-
-    static void unix_save_cursor_pos() { std::cout << terminal_escape_sequence << "s"; }
-
-    static void unix_restore_cursor_pos() { std::cout << terminal_escape_sequence << "u"; }
+    static void unix_save_cursor_pos() { std::cout << s_terminal_escape_sequence << "s"; }
+    static void unix_restore_cursor_pos() { std::cout << s_terminal_escape_sequence << "u"; }
 
     static void unix_set_color(uint32_t fg, uint32_t bg) {
-        std::cout << terminal_escape_sequence << "3" << fg << ";4" << bg << "m";
+        std::cout << s_terminal_escape_sequence << "3" << fg << ";4" << bg << "m";
     }
 
-    static void unix_reset_color() { std::cout << terminal_escape_sequence << "0m"; }
+    static void unix_reset_color() { std::cout << s_terminal_escape_sequence << "0m"; }
 
     static void unix_set_cursor_pos(const coord& pos) {
-        std::cout << terminal_escape_sequence << pos.y << ";" << pos.x << "H";
+        std::cout << s_terminal_escape_sequence << pos.y << ";" << pos.x << "H";
     }
 
-    static void unix_advance_cursor_line() { std::cout << terminal_escape_sequence << "1E"; }
+    static void unix_advance_cursor_line() { std::cout << s_terminal_escape_sequence << "1E"; }
 
-    static void unix_disable_cursor() { std::cout << terminal_escape_sequence << "?25l"; }
-
-    static void unix_enable_cursor() { std::cout << terminal_escape_sequence << "?25h"; }
+    static void unix_disable_cursor() { std::cout << s_terminal_escape_sequence << "?25l"; }
+    static void unix_enable_cursor() { std::cout << s_terminal_escape_sequence << "?25h"; }
 
     static void unix_flush_console() { std::cout << std::flush; }
+
+    static void unix_setup_input_capture() {
+        if (s_normal_terminal_state) {
+            return;
+        }
+
+        termios desc;
+        if (tcgetattr(STDOUT_FILENO, &desc) != 0) {
+            throw std::runtime_error("failed to query the state of the terminal!");
+        }
+
+        s_normal_terminal_state = std::make_unique<termios>(desc);
+        cfmakeraw(&desc);
+
+        if (tcsetattr(STDOUT_FILENO, TCSANOW, &desc) != 0) {
+            throw std::runtime_error("failed to set the state of the terminal!");
+        }
+    }
+
+    static void unix_cleanup_input_capture() {
+        if (!s_normal_terminal_state) {
+            return;
+        }
+
+        if (tcsetattr(STDOUT_FILENO, TCSANOW, s_normal_terminal_state.get()) != 0) {
+            throw std::runtime_error("failed to revert terminal!");
+        }
+
+        s_normal_terminal_state.reset();
+    }
 
     void populate_backend_functions(renderer_backend_t& backend) {
         backend.save_screen = unix_save_screen;
@@ -66,5 +96,8 @@ namespace libchess::console {
         backend.enable_cursor = unix_enable_cursor;
 
         backend.flush_console = unix_flush_console;
+
+        backend.setup_input_capture = unix_setup_input_capture;
+        backend.cleanup_input_capture = unix_cleanup_input_capture;
     }
 } // namespace libchess::console

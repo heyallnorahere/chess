@@ -33,7 +33,26 @@ static bool dump_board(std::shared_ptr<libchess::board> board) {
 }
 */
 
+static bool s_quit;
+static std::mutex s_mutex;
+
 using namespace libchess::console;
+void read_console() {
+    char c;
+    while ((c = (char)std::cin.get()) != -1) {
+        if (c >= 'A') {
+            renderer::render(libchess::coord(0, 0), c, color_default, color_default);
+            renderer::flush();
+        }
+
+        if (c == '\r') {
+            s_mutex.lock();
+            s_quit = true;
+            s_mutex.unlock();
+        }
+    }
+}
+
 int main(int argc, const char** argv) {
     /*
     std::shared_ptr<libchess::board> board;
@@ -54,7 +73,26 @@ int main(int argc, const char** argv) {
     renderer::render(libchess::coord(10, 10), 'F', color_cyan, color_red);
     renderer::flush();
 
-    std::cin.get();
+    std::thread reader_thread(read_console);
+    reader_thread.detach();
+
+    s_mutex.lock();
+    s_quit = false;
+    s_mutex.unlock();
+
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+        s_mutex.lock();
+        if (s_quit) {
+            break;
+        }
+
+        s_mutex.unlock();
+    }
+
+    s_mutex.unlock();
     renderer::shutdown();
+
     return 0;
 }

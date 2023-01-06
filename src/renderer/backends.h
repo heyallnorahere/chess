@@ -35,6 +35,9 @@ namespace libchess::console {
         void (*enable_cursor)();
 
         void (*flush_console)();
+
+        void (*setup_input_capture)();
+        void (*cleanup_input_capture)();
     };
 
     void populate_backend_functions(renderer_backend_t& backend);

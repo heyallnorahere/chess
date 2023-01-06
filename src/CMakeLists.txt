@@ -13,7 +13,7 @@ endif()
 list(APPEND CHESS_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/renderer/${TARGET_PLATFORM}_backend.cpp")
 add_executable(chess ${CHESS_SOURCE})
 
-target_link_libraries(chess PRIVATE libchess)
+target_link_libraries(chess PRIVATE libchess pthread)
 target_include_directories(chess PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_precompile_headers(chess PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/pch.h")
 set_target_properties(chess PROPERTIES
