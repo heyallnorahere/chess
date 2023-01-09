@@ -80,7 +80,11 @@ namespace libchess::console {
     }
 
     static void unix_set_thread_name(std::thread& thread, const std::string& name) {
+#ifdef LIBCHESS_PLATFORM_LINUX
         pthread_setname_np(thread.native_handle(), name.c_str());
+#else
+        // nothing. osx is lame
+#endif
     }
 
     void populate_backend_functions(renderer_backend_t& backend) {
