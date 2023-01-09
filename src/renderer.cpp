@@ -24,6 +24,11 @@ namespace libchess::console {
         uint32_t fg, bg;
     };
 
+    struct key_callback_desc_t {
+        key_callback_t callback;
+        void* user_data;
+    };
+
     struct renderer_info_t {
         cell_info_t* buffer;
         size_t buffer_size;
@@ -31,9 +36,28 @@ namespace libchess::console {
 
         renderer_backend_t backend;
         std::unordered_set<coord> rendered_indices;
+
+        std::vector<std::optional<key_callback_desc_t>> key_callbacks;
+        std::mutex key_callback_mutex;
     };
 
     static std::unique_ptr<renderer_info_t> s_renderer_info;
+    static void renderer_key_thread() {
+        char c;
+        while ((c = (char)std::cin.get()) != -1) {
+            util::mutex_lock lock(s_renderer_info->key_callback_mutex);
+
+            for (const auto& callback : s_renderer_info->key_callbacks) {
+                if (!callback.has_value()) {
+                    continue;
+                }
+
+                const auto& data = callback.value();
+                data.callback(c, data.user_data);
+            }
+        }
+    }
+
     void renderer::init(int32_t width, int32_t height) {
         if (s_renderer_info) {
             throw std::runtime_error("renderer already initialized!");
@@ -58,6 +82,10 @@ namespace libchess::console {
         s_renderer_info->backend.disable_cursor();
         s_renderer_info->backend.flush_console();
         s_renderer_info->backend.setup_input_capture();
+
+        std::thread thread(renderer_key_thread);
+        s_renderer_info->backend.set_thread_name(thread, "Key capture thread");
+        thread.detach();
     }
 
     void renderer::shutdown() {
@@ -118,5 +146,51 @@ namespace libchess::console {
         cell.bg = bg;
 
         s_renderer_info->rendered_indices.insert(pos);
+    }
+
+    size_t renderer::add_key_callback(key_callback_t callback, void* user_data) {
+        util::mutex_lock lock(s_renderer_info->key_callback_mutex);
+
+        std::optional<size_t> found_index;
+        for (size_t i = 0; i < s_renderer_info->key_callbacks.size(); i++) {
+            if (s_renderer_info->key_callbacks[i].has_value()) {
+                continue;
+            }
+
+            found_index = i;
+            break;
+        }
+
+        key_callback_desc_t data;
+        data.callback = callback;
+        data.user_data = user_data;
+
+        if (found_index.has_value()) {
+            size_t index = found_index.value();
+            s_renderer_info->key_callbacks[index] = data;
+
+            return index;
+        } else {
+            size_t index = s_renderer_info->key_callbacks.size();
+            s_renderer_info->key_callbacks.emplace_back(data);
+
+            return index;
+        }
+    }
+
+    bool renderer::remove_key_callback(size_t index) {
+        util::mutex_lock lock(s_renderer_info->key_callback_mutex);
+
+        if (index >= s_renderer_info->key_callbacks.size()) {
+            return false;
+        }
+
+        auto& callback = s_renderer_info->key_callbacks[index];
+        if (!callback.has_value()) {
+            return false;
+        }
+
+        callback.reset();
+        return true;
     }
 } // namespace libchess::console

@@ -37,19 +37,16 @@ static bool s_quit;
 static std::mutex s_mutex;
 
 using namespace libchess::console;
-void read_console() {
-    char c;
-    while ((c = (char)std::cin.get()) != -1) {
-        if (c >= 'A') {
-            renderer::render(libchess::coord(0, 0), c, color_default, color_default);
-            renderer::flush();
-        }
+void key_callback(char c, void* user_data) {
+    if (c >= 'A') {
+        renderer::render(libchess::coord(0, 0), c, color_default, color_default);
+        renderer::flush();
+    }
 
-        if (c == '\r') {
-            s_mutex.lock();
-            s_quit = true;
-            s_mutex.unlock();
-        }
+    if (c == '\r') {
+        s_mutex.lock();
+        s_quit = true;
+        s_mutex.unlock();
     }
 }
 
@@ -70,11 +67,10 @@ int main(int argc, const char** argv) {
     */
 
     renderer::init(800, 600);
+    size_t callback_index = renderer::add_key_callback(key_callback);
+
     renderer::render(libchess::coord(10, 10), 'F', color_cyan, color_red);
     renderer::flush();
-
-    std::thread reader_thread(read_console);
-    reader_thread.detach();
 
     s_mutex.lock();
     s_quit = false;
@@ -92,6 +88,7 @@ int main(int argc, const char** argv) {
     }
 
     s_mutex.unlock();
+    renderer::remove_key_callback(callback_index);
     renderer::shutdown();
 
     return 0;

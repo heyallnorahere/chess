@@ -28,6 +28,7 @@ namespace libchess::console {
         color_default = 9
     };
 
+    using key_callback_t = void (*)(char, void*);
     class renderer {
     public:
         renderer() = delete;
@@ -40,5 +41,8 @@ namespace libchess::console {
 
         static void render(const coord& pos, char character, uint32_t fg = color_default,
                            uint32_t bg = color_default);
+
+        static size_t add_key_callback(key_callback_t callback, void* user_data = nullptr);
+        static bool remove_key_callback(size_t index);
     };
 }; // namespace libchess::console

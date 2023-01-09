@@ -28,7 +28,7 @@ namespace libchess::console {
         void (*set_color)(uint32_t, uint32_t);
         void (*reset_color)();
 
-        void (*set_cursor_pos)(const coord& pos);
+        void (*set_cursor_pos)(const coord&);
         void (*advance_cursor_line)();
 
         void (*disable_cursor)();
@@ -38,6 +38,8 @@ namespace libchess::console {
 
         void (*setup_input_capture)();
         void (*cleanup_input_capture)();
+
+        void (*set_thread_name)(std::thread&, const std::string&);
     };
 
     void populate_backend_functions(renderer_backend_t& backend);

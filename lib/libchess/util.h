@@ -35,4 +35,20 @@ namespace libchess::util {
 
     bool parse_piece(char character, piece_info_t& piece, bool parse_color = true);
     std::optional<char> serialize_piece(const piece_info_t& piece, bool serialize_color = true);
+
+    class mutex_lock {
+    public:
+        mutex_lock(std::mutex& mutex) {
+            m_mutex = &mutex;
+            m_mutex->lock();
+        }
+
+        ~mutex_lock() { m_mutex->unlock(); }
+
+        mutex_lock(const mutex_lock&) = delete;
+        mutex_lock& operator=(const mutex_lock&) = delete;
+
+    private:
+        std::mutex* m_mutex;
+    };
 } // namespace libchess::util

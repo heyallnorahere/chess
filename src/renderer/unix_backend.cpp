@@ -19,6 +19,7 @@
 
 #include <termios.h>
 #include <unistd.h>
+#include <pthread.h>
 
 namespace libchess::console {
     static const std::string s_terminal_escape_sequence = "\x1b[";
@@ -78,6 +79,10 @@ namespace libchess::console {
         s_normal_terminal_state.reset();
     }
 
+    static void unix_set_thread_name(std::thread& thread, const std::string& name) {
+        pthread_setname_np(thread.native_handle(), name.c_str());
+    }
+
     void populate_backend_functions(renderer_backend_t& backend) {
         backend.save_screen = unix_save_screen;
         backend.restore_screen = unix_restore_screen;
@@ -99,5 +104,7 @@ namespace libchess::console {
 
         backend.setup_input_capture = unix_setup_input_capture;
         backend.cleanup_input_capture = unix_cleanup_input_capture;
+
+        backend.set_thread_name = unix_set_thread_name;
     }
 } // namespace libchess::console
