@@ -32,20 +32,18 @@ namespace libchess::console {
     static void unix_save_cursor_pos() { std::cout << s_terminal_escape_sequence << "s"; }
     static void unix_restore_cursor_pos() { std::cout << s_terminal_escape_sequence << "u"; }
 
+    static void unix_set_cursor_pos(const coord& pos) {
+        std::cout << s_terminal_escape_sequence << pos.y << ";" << pos.x << "H";
+    }
+
+    static void unix_disable_cursor() { std::cout << s_terminal_escape_sequence << "?25l"; }
+    static void unix_enable_cursor() { std::cout << s_terminal_escape_sequence << "?25h"; }
+
     static void unix_set_color(uint32_t fg, uint32_t bg) {
         std::cout << s_terminal_escape_sequence << "3" << fg << ";4" << bg << "m";
     }
 
     static void unix_reset_color() { std::cout << s_terminal_escape_sequence << "0m"; }
-
-    static void unix_set_cursor_pos(const coord& pos) {
-        std::cout << s_terminal_escape_sequence << pos.y << ";" << pos.x << "H";
-    }
-
-    static void unix_advance_cursor_line() { std::cout << s_terminal_escape_sequence << "1E"; }
-
-    static void unix_disable_cursor() { std::cout << s_terminal_escape_sequence << "?25l"; }
-    static void unix_enable_cursor() { std::cout << s_terminal_escape_sequence << "?25h"; }
 
     static void unix_flush_console() { std::cout << std::flush; }
 
@@ -79,6 +77,8 @@ namespace libchess::console {
         s_normal_terminal_state.reset();
     }
 
+    static char unix_capture_character_blocking() { return (char)std::cin.get(); }
+
     static void unix_set_thread_name(std::thread& thread, const std::string& name) {
 #ifdef LIBCHESS_PLATFORM_LINUX
         pthread_setname_np(thread.native_handle(), name.c_str());
@@ -94,20 +94,19 @@ namespace libchess::console {
 
         backend.save_cursor_pos = unix_save_cursor_pos;
         backend.restore_cursor_pos = unix_restore_cursor_pos;
-
-        backend.set_color = unix_set_color;
-        backend.reset_color = unix_reset_color;
-
         backend.set_cursor_pos = unix_set_cursor_pos;
-        backend.advance_cursor_line = unix_advance_cursor_line;
 
         backend.disable_cursor = unix_disable_cursor;
         backend.enable_cursor = unix_enable_cursor;
+
+        backend.set_color = unix_set_color;
+        backend.reset_color = unix_reset_color;
 
         backend.flush_console = unix_flush_console;
 
         backend.setup_input_capture = unix_setup_input_capture;
         backend.cleanup_input_capture = unix_cleanup_input_capture;
+        backend.capture_character_blocking = unix_capture_character_blocking;
 
         backend.set_thread_name = unix_set_thread_name;
     }

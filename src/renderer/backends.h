@@ -24,20 +24,19 @@ namespace libchess::console {
 
         void (*save_cursor_pos)();
         void (*restore_cursor_pos)();
-
-        void (*set_color)(uint32_t, uint32_t);
-        void (*reset_color)();
-
         void (*set_cursor_pos)(const coord&);
-        void (*advance_cursor_line)();
 
         void (*disable_cursor)();
         void (*enable_cursor)();
+
+        void (*set_color)(uint32_t, uint32_t);
+        void (*reset_color)();
 
         void (*flush_console)();
 
         void (*setup_input_capture)();
         void (*cleanup_input_capture)();
+        char (*capture_character_blocking)();
 
         void (*set_thread_name)(std::thread&, const std::string&);
     };

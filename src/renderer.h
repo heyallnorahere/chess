@@ -18,6 +18,7 @@
 
 namespace libchess::console {
     enum renderer_color : uint32_t {
+        color_black = 0,
         color_red = (1 << 0),
         color_green = (1 << 1),
         color_yellow = color_red | color_green,

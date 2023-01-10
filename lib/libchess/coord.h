@@ -17,7 +17,7 @@
 #pragma once
 
 namespace libchess {
-    // (0, 0) maps to a1, (7, 7) maps to h8
+    // on a chess board, (0, 0) maps to a1, and (7, 7) maps to h8
     struct coord {
         int32_t x, y;
 

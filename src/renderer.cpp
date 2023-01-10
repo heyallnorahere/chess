@@ -44,7 +44,7 @@ namespace libchess::console {
     static std::unique_ptr<renderer_info_t> s_renderer_info;
     static void renderer_key_thread() {
         char c;
-        while ((c = (char)std::cin.get()) != -1) {
+        while ((c = s_renderer_info->backend.capture_character_blocking()) != -1) {
             util::mutex_lock lock(s_renderer_info->key_callback_mutex);
 
             for (const auto& callback : s_renderer_info->key_callbacks) {
@@ -76,11 +76,21 @@ namespace libchess::console {
             throw std::runtime_error("failed to allocate renderer buffer!");
         }
 
-        s_renderer_info->backend.save_cursor_pos();
-        s_renderer_info->backend.save_screen();
+        if (s_renderer_info->backend.save_cursor_pos != nullptr) {
+            s_renderer_info->backend.save_cursor_pos();
+        }
+
+        if (s_renderer_info->backend.save_screen != nullptr) {
+            s_renderer_info->backend.save_screen();
+        }
+
         s_renderer_info->backend.clear_screen();
         s_renderer_info->backend.disable_cursor();
-        s_renderer_info->backend.flush_console();
+
+        if (s_renderer_info->backend.flush_console != nullptr) {
+            s_renderer_info->backend.flush_console();
+        }
+
         s_renderer_info->backend.setup_input_capture();
 
         std::thread thread(renderer_key_thread);
@@ -94,9 +104,22 @@ namespace libchess::console {
         s_renderer_info->backend.cleanup_input_capture();
         s_renderer_info->backend.reset_color();
         s_renderer_info->backend.enable_cursor();
-        s_renderer_info->backend.restore_screen();
-        s_renderer_info->backend.restore_cursor_pos();
-        s_renderer_info->backend.flush_console();
+
+        if (s_renderer_info->backend.restore_screen != nullptr) {
+            s_renderer_info->backend.restore_screen();
+        } else {
+            s_renderer_info->backend.clear_screen();
+        }
+
+        if (s_renderer_info->backend.restore_cursor_pos != nullptr) {
+            s_renderer_info->backend.restore_cursor_pos();
+        } else {
+            s_renderer_info->backend.set_cursor_pos(coord(0, 0));
+        }
+
+        if (s_renderer_info->backend.flush_console != nullptr) {
+            s_renderer_info->backend.flush_console();
+        }
 
         s_renderer_info.reset();
     }
@@ -112,7 +135,10 @@ namespace libchess::console {
         s_renderer_info->backend.clear_screen();
         s_renderer_info->backend.set_cursor_pos(coord(0, 0));
         s_renderer_info->backend.set_color(color_default, color_default);
-        s_renderer_info->backend.flush_console();
+
+        if (s_renderer_info->backend.flush_console != nullptr) {
+            s_renderer_info->backend.flush_console();
+        }
     }
 
     void renderer::flush() {
@@ -124,12 +150,15 @@ namespace libchess::console {
             s_renderer_info->backend.set_color(cell.fg, cell.bg);
 
             std::cout << cell.character;
-#ifdef LIBCHESS_PLATFORM_WINDOWS
-            std::cout << std::flush;
-#endif
+            if (s_renderer_info->backend.flush_console == nullptr) {
+                std::cout << std::flush;
+            }
         }
 
-        s_renderer_info->backend.flush_console();
+        if (s_renderer_info->backend.flush_console != nullptr) {
+            s_renderer_info->backend.flush_console();
+        }
+
         s_renderer_info->rendered_indices.clear();
     }
 
