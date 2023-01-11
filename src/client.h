@@ -24,16 +24,23 @@ namespace libchess::console {
         ~client();
 
         bool load_fen(const std::string& fen);
-        std::shared_ptr<board> get_board();
+
+        bool should_quit();
+
 
     private:
         client();
+
+        void redraw();
+        void redraw_board(const coord& offset);
+        void redraw_board_frame(const coord& offset);
 
         engine m_engine;
         std::mutex m_mutex;
 
         size_t m_key_callback;
+        bool m_should_quit;
 
-        friend class client_mutex_lock;
+        friend struct client_callback_delegate;
     };
 } // namespace libchess::console

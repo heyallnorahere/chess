@@ -32,6 +32,7 @@ namespace libchess::console {
         void (*set_color)(uint32_t, uint32_t);
         void (*reset_color)();
 
+        void (*console_write)();
         void (*flush_console)();
 
         void (*setup_input_capture)();

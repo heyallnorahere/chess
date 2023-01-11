@@ -20,7 +20,7 @@
 
 namespace libchess::console {
     struct cell_info_t {
-        char character;
+        wchar_t character;
         uint32_t fg, bg;
     };
 
@@ -149,7 +149,7 @@ namespace libchess::console {
             s_renderer_info->backend.set_cursor_pos(pos);
             s_renderer_info->backend.set_color(cell.fg, cell.bg);
 
-            std::cout << cell.character;
+            std::wcout << cell.character;
             if (s_renderer_info->backend.flush_console == nullptr) {
                 std::cout << std::flush;
             }
@@ -162,7 +162,7 @@ namespace libchess::console {
         s_renderer_info->rendered_indices.clear();
     }
 
-    void renderer::render(const coord& pos, char character, uint32_t fg, uint32_t bg) {
+    void renderer::render(const coord& pos, wchar_t character, uint32_t fg, uint32_t bg) {
         size_t index = ((size_t)pos.y * s_renderer_info->width) + pos.x;
         auto& cell = s_renderer_info->buffer[index];
 

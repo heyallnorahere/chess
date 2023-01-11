@@ -19,26 +19,27 @@
 #include "renderer.h"
 
 namespace libchess::console {
-    class client_mutex_lock {
-    public:
-        client_mutex_lock(client* _client) {
-            m_lock = std::make_unique<util::mutex_lock>(_client->m_mutex);
+    struct client_callback_delegate {
+        client_callback_delegate(client* _this) {
+            this->_this = _this;
         }
 
-        ~client_mutex_lock() { m_lock.reset(); }
+        void key_callback(char c) {
+            util::mutex_lock lock(_this->m_mutex);
 
-        client_mutex_lock(const client_mutex_lock&) = delete;
-        client_mutex_lock& operator=(const client_mutex_lock&) = delete;
+            if (c == '\r') {
+                _this->m_should_quit = true;
+            }
 
-    private:
-        std::unique_ptr<util::mutex_lock> m_lock;
+            // todo: things...
+        }
+
+        client* _this = nullptr;
     };
 
     static void client_key_callback(char c, void* user_data) {
-        auto _this = (client*)user_data;
-        client_mutex_lock lock(_this);
-
-        // todo: things...
+        client_callback_delegate delegate((client*)user_data);
+        delegate.key_callback(c);
     }
 
     std::shared_ptr<client> client::create(const std::optional<std::string>& fen) {
@@ -48,6 +49,10 @@ namespace libchess::console {
             if (!_client->load_fen(fen.value())) {
                 _client.reset();
             }
+        }
+
+        if (_client) {
+            _client->redraw();
         }
 
         return _client;
@@ -67,9 +72,9 @@ namespace libchess::console {
         return true;
     }
 
-    std::shared_ptr<board> client::get_board() {
+    bool client::should_quit() {
         util::mutex_lock lock(m_mutex);
-        return m_engine.get_board();
+        return m_should_quit;
     }
 
     client::client() {
@@ -77,5 +82,30 @@ namespace libchess::console {
         m_engine.set_board(_board);
 
         m_key_callback = renderer::add_key_callback(client_key_callback, this);
+        m_should_quit = false;
+    }
+
+    void client::redraw() {
+        redraw_board(coord(0, 0));
+
+        // todo: redraw console
+    }
+
+    void client::redraw_board(const coord& offset) {
+        redraw_board_frame(offset);
+
+        // todo: draw pieces
+    }
+
+    void client::redraw_board_frame(const coord& offset) {
+        for (size_t i = 0; i <= board::width; i++) {
+            for (size_t j = 0; j < board::width; j++) {
+                int32_t coord_0 = (int32_t)i * 2;
+                int32_t coord_1 = 1 + ((int32_t)j * 2);
+
+                renderer::render(offset + coord(coord_0, coord_1), 2551);
+                renderer::render(offset + coord(coord_1, coord_0), 2550);
+            }
+        }
     }
 } // namespace libchess::console

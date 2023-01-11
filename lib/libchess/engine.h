@@ -61,6 +61,17 @@ namespace libchess {
 
         void clear_cache();
 
+        // board functions
+        bool get_piece(const coord& pos, piece_info_t* piece) const;
+        bool set_piece(const coord& pos, const piece_info_t& piece) const;
+
+        std::string serialize_board() const;
+        player_color get_current_turn() const;
+        uint8_t get_player_castling_availability(player_color player) const;
+        const std::optional<coord>& get_en_passant_target() const;
+        uint64_t get_halfmove_clock() const;
+        uint64_t get_fullmove_count() const;
+
     private:
         void compute_check_internal(player_color color, const std::vector<coord>& kings,
                                     std::vector<coord>& pieces);

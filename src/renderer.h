@@ -40,7 +40,7 @@ namespace libchess::console {
         static void clear_screen();
         static void flush();
 
-        static void render(const coord& pos, char character, uint32_t fg = color_default,
+        static void render(const coord& pos, wchar_t character, uint32_t fg = color_default,
                            uint32_t bg = color_default);
 
         static size_t add_key_callback(key_callback_t callback, void* user_data = nullptr);

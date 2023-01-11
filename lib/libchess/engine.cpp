@@ -474,6 +474,28 @@ namespace libchess {
         // todo: clear caches as they're added
     }
 
+    bool engine::get_piece(const coord& pos, piece_info_t* piece) const {
+        return m_board->get_piece(pos, piece);
+    }
+
+    bool engine::set_piece(const coord& pos, const piece_info_t& piece) const {
+        return m_board->set_piece(pos, piece);
+    }
+
+    std::string engine::serialize_board() const { return m_board->serialize(); }
+    player_color engine::get_current_turn() const { return m_board_data->current_turn; }
+
+    uint8_t engine::get_player_castling_availability(player_color player) const {
+        return m_board_data->player_castling_availability.at(player);
+    }
+
+    const std::optional<coord>& engine::get_en_passant_target() const {
+        return m_board_data->en_passant_target;
+    }
+
+    uint64_t engine::get_halfmove_clock() const { return m_board_data->halfmove_clock; }
+    uint64_t engine::get_fullmove_count() const { return m_board_data->fullmove_count; }
+
     void engine::compute_check_internal(player_color color, const std::vector<coord>& kings,
                                         std::vector<coord>& pieces) {
         player_color opposing =
