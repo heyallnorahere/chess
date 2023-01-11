@@ -42,6 +42,9 @@ namespace libchess {
 
         coord operator*(const coord& other) const { return coord(x * other.x, y * other.y); }
         coord& operator*=(const coord& other) { return *this = *this * other; }
+        
+        coord operator*(int32_t scalar) const { return coord(x * scalar, y * scalar); }
+        coord& operator*=(int32_t scalar) { return *this = *this * scalar; }
     };
 } // namespace libchess
 

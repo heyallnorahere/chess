@@ -92,7 +92,24 @@ namespace libchess::console {
     void client::redraw_board(const coord& offset) {
         redraw_board_frame(offset);
 
-        // todo: draw pieces
+        // drawing pieces
+        for (int32_t x = 0; x < board::width; x++) {
+            for (int32_t y = 0; y < board::width; y++) {
+                auto local = coord(x, y);
+
+                bool is_tile_white = local.taxicab_length() % 2 != 0;
+                uint32_t fg = is_tile_white ? color_black : color_white;
+                uint32_t bg = is_tile_white ? color_white : color_black;
+
+                piece_info_t piece;
+                m_engine.get_piece(local, &piece);
+
+                char character = util::serialize_piece(piece).value_or(' ');
+                auto global = offset + coord(1 + (x * 2), 1 + ((board::width - (y + 1)) * 2));
+
+                renderer::render(global, (wchar_t)character, fg, bg);
+            }
+        }
     }
 
     void client::redraw_board_frame(const coord& offset) {
