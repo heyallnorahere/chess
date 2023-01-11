@@ -76,6 +76,11 @@ namespace libchess::console {
             throw std::runtime_error("failed to allocate renderer buffer!");
         }
 
+        // ensure that unicode characters can be printed
+        if (s_renderer_info->backend.verify_locale != nullptr) {
+            s_renderer_info->backend.verify_locale();
+        }
+
         if (s_renderer_info->backend.save_cursor_pos != nullptr) {
             s_renderer_info->backend.save_cursor_pos();
         }
@@ -151,7 +156,7 @@ namespace libchess::console {
 
             std::wcout << cell.character;
             if (s_renderer_info->backend.flush_console == nullptr) {
-                std::cout << std::flush;
+                std::wcout << std::flush;
             }
         }
 

@@ -22,30 +22,31 @@
 #include <pthread.h>
 
 namespace libchess::console {
-    static const std::string s_terminal_escape_sequence = "\x1b[";
+    static const std::wstring s_terminal_escape_sequence = L"\x1b[";
     static std::unique_ptr<termios> s_normal_terminal_state;
 
-    static void unix_save_screen() { std::cout << s_terminal_escape_sequence << "?47h"; }
-    static void unix_restore_screen() { std::cout << s_terminal_escape_sequence << "?47l"; }
-    static void unix_clear_screen() { std::cout << s_terminal_escape_sequence << "J"; }
+    static void unix_save_screen() { std::wcout << s_terminal_escape_sequence << L"?47h"; }
+    static void unix_restore_screen() { std::wcout << s_terminal_escape_sequence << L"?47l"; }
+    static void unix_clear_screen() { std::wcout << s_terminal_escape_sequence << L"J"; }
 
-    static void unix_save_cursor_pos() { std::cout << s_terminal_escape_sequence << "s"; }
-    static void unix_restore_cursor_pos() { std::cout << s_terminal_escape_sequence << "u"; }
+    static void unix_save_cursor_pos() { std::wcout << s_terminal_escape_sequence << L"s"; }
+    static void unix_restore_cursor_pos() { std::wcout << s_terminal_escape_sequence << L"u"; }
 
     static void unix_set_cursor_pos(const coord& pos) {
-        std::cout << s_terminal_escape_sequence << pos.y << ";" << pos.x << "H";
+        std::wcout << s_terminal_escape_sequence << pos.y << L";" << pos.x << L"H";
     }
 
-    static void unix_disable_cursor() { std::cout << s_terminal_escape_sequence << "?25l"; }
-    static void unix_enable_cursor() { std::cout << s_terminal_escape_sequence << "?25h"; }
+    static void unix_disable_cursor() { std::wcout << s_terminal_escape_sequence << L"?25l"; }
+    static void unix_enable_cursor() { std::wcout << s_terminal_escape_sequence << L"?25h"; }
 
     static void unix_set_color(uint32_t fg, uint32_t bg) {
-        std::cout << s_terminal_escape_sequence << "3" << fg << ";4" << bg << "m";
+        std::wcout << s_terminal_escape_sequence << L"3" << fg << L";4" << bg << L"m";
     }
 
-    static void unix_reset_color() { std::cout << s_terminal_escape_sequence << "0m"; }
+    static void unix_reset_color() { std::wcout << s_terminal_escape_sequence << L"0m"; }
 
-    static void unix_flush_console() { std::cout << std::flush; }
+    static void unix_verify_locale() { setlocale(LC_ALL, "en_US.UTF-8"); }
+    static void unix_flush_console() { std::wcout << std::flush; }
 
     static void unix_setup_input_capture() {
         if (s_normal_terminal_state) {
@@ -102,6 +103,7 @@ namespace libchess::console {
         backend.set_color = unix_set_color;
         backend.reset_color = unix_reset_color;
 
+        backend.verify_locale = unix_verify_locale;
         backend.flush_console = unix_flush_console;
 
         backend.setup_input_capture = unix_setup_input_capture;

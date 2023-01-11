@@ -103,8 +103,8 @@ namespace libchess::console {
                 int32_t coord_0 = (int32_t)i * 2;
                 int32_t coord_1 = 1 + ((int32_t)j * 2);
 
-                renderer::render(offset + coord(coord_0, coord_1), 2551);
-                renderer::render(offset + coord(coord_1, coord_0), 2550);
+                renderer::render(offset + coord(coord_0, coord_1), L'\x2551');
+                renderer::render(offset + coord(coord_1, coord_0), L'\x2550');
             }
         }
     }

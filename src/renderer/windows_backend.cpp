@@ -174,6 +174,7 @@ namespace libchess::console {
         backend.set_color = windows_set_color;
         backend.reset_color = windows_reset_color;
 
+        backend.verify_locale = nullptr;
         backend.flush_console = nullptr;
 
         backend.setup_input_capture = windows_setup_input_capture;
