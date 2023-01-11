@@ -138,8 +138,8 @@ namespace libchess::console {
         }
 
         s_renderer_info->backend.clear_screen();
-        s_renderer_info->backend.set_cursor_pos(coord(0, 0));
         s_renderer_info->backend.set_color(color_default, color_default);
+        s_renderer_info->backend.set_cursor_pos(coord(0, 0));
 
         if (s_renderer_info->backend.flush_console != nullptr) {
             s_renderer_info->backend.flush_console();
@@ -151,8 +151,8 @@ namespace libchess::console {
             size_t index = ((size_t)pos.y * s_renderer_info->width) + pos.x;
             const auto& cell = s_renderer_info->buffer[index];
 
-            s_renderer_info->backend.set_cursor_pos(pos);
             s_renderer_info->backend.set_color(cell.fg, cell.bg);
+            s_renderer_info->backend.set_cursor_pos(pos);
 
             std::wcout << cell.character;
             if (s_renderer_info->backend.flush_console == nullptr) {

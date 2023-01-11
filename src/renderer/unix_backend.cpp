@@ -33,7 +33,7 @@ namespace libchess::console {
     static void unix_restore_cursor_pos() { std::wcout << s_terminal_escape_sequence << L"u"; }
 
     static void unix_set_cursor_pos(const coord& pos) {
-        std::wcout << s_terminal_escape_sequence << pos.y << L";" << pos.x << L"H";
+        std::wcout << s_terminal_escape_sequence << (pos.y + 1) << L";" << (pos.x + 1) << L"H";
     }
 
     static void unix_disable_cursor() { std::wcout << s_terminal_escape_sequence << L"?25l"; }
