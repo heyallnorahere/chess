@@ -31,3 +31,4 @@
 #include <mutex>
 #include <string>
 #include <optional>
+#include <functional>
