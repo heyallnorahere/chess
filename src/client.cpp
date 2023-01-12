@@ -24,12 +24,7 @@ namespace libchess::console {
 
         void key_callback(char c) {
             util::mutex_lock lock(_this->m_mutex);
-
-            if (c == '\r') {
-                _this->m_should_quit = true;
-            }
-
-            // todo: things...
+            _this->m_console->process_keystroke(c);
         }
 
         client* _this = nullptr;
@@ -50,6 +45,7 @@ namespace libchess::console {
         }
 
         if (_client) {
+            _client->register_commands();
             _client->redraw();
         }
 
@@ -81,6 +77,14 @@ namespace libchess::console {
 
         m_key_callback = renderer::add_key_callback(client_key_callback, this);
         m_should_quit = false;
+
+        m_console = game_console::create();
+    }
+
+    void client::register_commands() {
+        command_factory factory(m_console);
+
+        // todo: register commands
     }
 
     void client::redraw() {

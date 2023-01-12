@@ -15,9 +15,10 @@
 */
 
 #pragma once
+#include "game_console.h"
 
 namespace libchess::console {
-    class client {
+    class client : std::enable_shared_from_this<client> {
     public:
         static std::shared_ptr<client> create(const std::optional<std::string>& fen = {});
 
@@ -31,11 +32,14 @@ namespace libchess::console {
     private:
         client();
 
+        void register_commands();
+
         void redraw();
         void redraw_board(const coord& offset);
         void redraw_board_frame(const coord& offset);
 
         engine m_engine;
+        std::shared_ptr<game_console> m_console;
         std::mutex m_mutex;
 
         size_t m_key_callback;
