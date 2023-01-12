@@ -28,7 +28,7 @@ namespace libchess::console {
     public:
         static std::shared_ptr<game_console> create();
 
-        ~game_console() = default;
+        ~game_console();
 
         game_console(const game_console&) = delete;
         game_console& operator=(const game_console&) = delete;
@@ -52,7 +52,10 @@ namespace libchess::console {
         std::mutex m_mutex;
 
         std::string m_current_command;
+        size_t m_cursor_pos;
+
         bool m_accept_input;
+        void* m_keystroke_state;
 
         friend class command_factory;
     };

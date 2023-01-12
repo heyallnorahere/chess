@@ -25,7 +25,7 @@ namespace libchess::console {
     };
 
     struct key_callback_desc_t {
-        key_callback_t callback;
+        key_callback callback;
         void* user_data;
     };
 
@@ -182,7 +182,7 @@ namespace libchess::console {
         s_renderer_info->rendered_indices.insert(pos);
     }
 
-    size_t renderer::add_key_callback(key_callback_t callback, void* user_data) {
+    size_t renderer::add_key_callback(key_callback callback, void* user_data) {
         util::mutex_lock lock(s_renderer_info->key_callback_mutex);
 
         std::optional<size_t> found_index;
@@ -226,5 +226,23 @@ namespace libchess::console {
 
         callback.reset();
         return true;
+    }
+
+    keystroke_type renderer::parse_keystroke(char c, void** state) {
+        if (s_renderer_info->backend.parse_keystroke == nullptr) {
+            return keystroke_type::character;
+        }
+
+        return s_renderer_info->backend.parse_keystroke(c, state);
+    }
+
+    void renderer::destroy_keystroke_state(void* state) {
+        if (state == nullptr) {
+            return;
+        }
+
+        if (s_renderer_info->backend.destroy_keystroke_state != nullptr) {
+            s_renderer_info->backend.destroy_keystroke_state(state);
+        }
     }
 } // namespace libchess::console

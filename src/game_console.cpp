@@ -16,6 +16,7 @@
 
 #include "pch.h"
 #include "game_console.h"
+#include "renderer.h"
 
 namespace libchess::console {
     static const std::string s_fallback_alias = "__fallback__";
@@ -28,15 +29,59 @@ namespace libchess::console {
         return console;
     }
 
+    game_console::~game_console() {
+        renderer::destroy_keystroke_state(m_keystroke_state);
+    }
+
     void game_console::set_accept_input(bool accept) {
         util::mutex_lock lock(m_mutex);
         m_accept_input = accept;
     }
 
+
     void game_console::process_keystroke(char c) {
         util::mutex_lock lock(m_mutex);
 
-        // todo: process keystroke
+        auto type = renderer::parse_keystroke(c, &m_keystroke_state);
+        switch (type) {
+        case keystroke_type::character:
+            switch (c) {
+            case '\r':
+                execute_command_internal(m_current_command);
+                m_current_command.clear();
+
+                m_cursor_pos = 0;
+                break;
+            case (char)127: // backspace
+                if (m_cursor_pos > 0) {
+                    m_cursor_pos--;
+                    m_current_command.replace(m_cursor_pos, 1, "");
+                }
+
+                break;
+            default:
+                m_current_command.insert(m_cursor_pos, 1, c);
+                m_cursor_pos++;
+                break;
+            }
+
+            break;
+        case keystroke_type::left_arrow:
+            if (m_cursor_pos > 0) {
+                m_cursor_pos--;
+            }
+
+            break;
+        case keystroke_type::right_arrow:
+            if (m_cursor_pos < m_current_command.length()) {
+                m_cursor_pos++;
+            }
+
+            break;
+        default:
+            // nothing
+            break;
+        }
     }
 
     void game_console::execute_command(const std::string& command) {
@@ -61,8 +106,8 @@ namespace libchess::console {
 
     game_console::game_console() {
         m_accept_input = false;
-
-        // todo: more initialization i assume
+        m_keystroke_state = nullptr;
+        m_cursor_pos = 0;
     }
 
     void game_console::execute_command_internal(const std::string& command) {

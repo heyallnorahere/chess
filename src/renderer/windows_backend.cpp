@@ -16,7 +16,6 @@
 
 #include "pch.h"
 #include "backends.h"
-#include "renderer.h"
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX

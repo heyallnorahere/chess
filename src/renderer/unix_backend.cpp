@@ -80,6 +80,54 @@ namespace libchess::console {
 
     static char unix_capture_character_blocking() { return (char)std::cin.get(); }
 
+    struct unix_keystroke_state_t {
+        char last_character = (char)0;
+        bool was_escape = false;
+    };
+
+    static keystroke_type unix_parse_keystroke(char c, void** state) {
+        if (*state == nullptr) {
+            *state = new unix_keystroke_state_t;
+        }
+
+        static constexpr char escape = '\x1b';
+        static constexpr char virtual_terminal_start = '[';
+
+        auto& keystroke_state = **(unix_keystroke_state_t**)state;
+        if (c == escape ||
+            (c == virtual_terminal_start && keystroke_state.last_character == escape)) {
+            keystroke_state.last_character = c;
+            keystroke_state.was_escape = true;
+            return keystroke_type::escape;
+        }
+
+        if (keystroke_state.last_character == virtual_terminal_start &&
+            keystroke_state.was_escape) {
+            keystroke_state.last_character = c;
+            keystroke_state.was_escape = true;
+
+            switch (c) {
+            case 'A':
+                return keystroke_type::up_arrow;
+            case 'B':
+                return keystroke_type::down_arrow;
+            case 'D':
+                return keystroke_type::left_arrow;
+            case 'C':
+                return keystroke_type::right_arrow;
+            default:
+                return keystroke_type::escape;
+            }
+        }
+
+        keystroke_state.last_character = c;
+        keystroke_state.was_escape = false;
+
+        return keystroke_type::character;
+    }
+
+    static void unix_destroy_keystroke_state(void* state) { delete (unix_keystroke_state_t*)state; }
+
     static void unix_set_thread_name(std::thread& thread, const std::string& name) {
 #ifdef LIBCHESS_PLATFORM_LINUX
         pthread_setname_np(thread.native_handle(), name.c_str());
@@ -109,6 +157,9 @@ namespace libchess::console {
         backend.setup_input_capture = unix_setup_input_capture;
         backend.cleanup_input_capture = unix_cleanup_input_capture;
         backend.capture_character_blocking = unix_capture_character_blocking;
+
+        backend.parse_keystroke = unix_parse_keystroke;
+        backend.destroy_keystroke_state = unix_destroy_keystroke_state;
 
         backend.set_thread_name = unix_set_thread_name;
     }

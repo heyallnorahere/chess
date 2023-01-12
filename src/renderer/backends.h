@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include "../renderer.h"
 
 namespace libchess::console {
     struct renderer_backend_t {
@@ -38,6 +39,9 @@ namespace libchess::console {
         void (*setup_input_capture)();
         void (*cleanup_input_capture)();
         char (*capture_character_blocking)();
+
+        keystroke_type (*parse_keystroke)(char, void**);
+        void (*destroy_keystroke_state)(void*);
 
         void (*set_thread_name)(std::thread&, const std::string&);
     };
