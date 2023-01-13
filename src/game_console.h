@@ -17,7 +17,10 @@
 #pragma once
 
 namespace libchess::console {
-    using console_command_callback = std::function<void(const std::vector<std::string>&)>;
+    using submit_line_callback = std::function<void(const std::string&)>;
+    using console_command_callback =
+        std::function<void(const std::vector<std::string>&, const submit_line_callback&)>;
+
     struct console_command_t {
         console_command_callback callback;
         std::unordered_set<std::string> aliases;

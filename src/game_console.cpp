@@ -29,15 +29,12 @@ namespace libchess::console {
         return console;
     }
 
-    game_console::~game_console() {
-        renderer::destroy_keystroke_state(m_keystroke_state);
-    }
+    game_console::~game_console() { renderer::destroy_keystroke_state(m_keystroke_state); }
 
     void game_console::set_accept_input(bool accept) {
         util::mutex_lock lock(m_mutex);
         m_accept_input = accept;
     }
-
 
     void game_console::process_keystroke(char c) {
         util::mutex_lock lock(m_mutex);
@@ -113,7 +110,80 @@ namespace libchess::console {
     void game_console::execute_command_internal(const std::string& command) {
         submit_line_internal(">" + command);
 
-        // todo: parse command
+        std::vector<std::string> segments;
+        util::split_string(command, ' ', segments, util::string_split_options_omit_empty);
+
+        std::vector<std::string> command_arguments;
+        if (segments.size() > 1) {
+            std::string current_argument;
+
+            bool in_quotes = false;
+            for (const auto& segment : segments) {
+                bool escape = false;
+
+                if (!current_argument.empty()) {
+                    current_argument += ' ';
+                }
+
+                for (char c : segment) {
+                    switch (c) {
+                    case '\\':
+                        if (escape) {
+                            current_argument += c;
+                            escape = false;
+                        } else {
+                            escape = true;
+                        }
+
+                        break;
+                    case '"':
+                        if (escape) {
+                            current_argument += c;
+                            escape = false;
+                        } else {
+                            in_quotes = !in_quotes;
+                        }
+
+                        break;
+                    default:
+                        current_argument += c;
+                        escape = false;
+
+                        break;
+                    }
+                }
+
+                if (!escape && !in_quotes) {
+                    command_arguments.push_back(current_argument);
+                    current_argument.clear();
+                }
+            }
+
+            if (!current_argument.empty()) {
+                command_arguments.push_back(current_argument);
+            }
+        } else {
+            command_arguments.push_back(segments[0]);
+        }
+
+        std::string command_name = command_arguments[0];
+        auto submit_line_callback = [this](const std::string& line) { submit_line_internal(line); };
+
+        if (m_commands.find(command_name) != m_commands.end()) {
+            auto info = m_commands.at(command_name);
+
+            auto it = command_arguments.begin();
+            it++;
+
+            std::vector<std::string> args(it, command_arguments.end());
+            info->callback(args, submit_line_callback);
+        } else if (m_commands.find(s_fallback_alias) != m_commands.end()) {
+            auto info = m_commands.at(command_name);
+            info->callback(command_arguments, submit_line_callback);
+        } else {
+            submit_line_internal(
+                "could not find either the requested command or a fallback - continuing");
+        }
     }
 
     void game_console::submit_line_internal(const std::string& line) {
