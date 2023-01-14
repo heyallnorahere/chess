@@ -78,6 +78,11 @@ namespace libchess::console {
         return m_should_quit;
     }
 
+    void client::get_console(const std::function<void(std::shared_ptr<game_console>)>& callback) {
+        util::mutex_lock lock(m_mutex);
+        callback(m_console);
+    }
+
     client::client() {
         auto _board = board::create_default();
         m_engine.set_board(_board);

@@ -28,6 +28,7 @@ namespace libchess::console {
 
         bool should_quit();
 
+        void get_console(const std::function<void(std::shared_ptr<game_console>)>& callback);
 
     private:
         client();
