@@ -43,10 +43,10 @@ namespace libchess::console {
         scroll_target.Y = -csbi.dwSize.Y;
 
         CHAR_INFO fill;
-        fill.Char.UnicodeChar = L' ';
+        fill.Char.AsciiChar = ' ';
         fill.Attributes = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
 
-        ::ScrollConsoleScreenBufferW(s_stdout_handle, &scroll_rect, nullptr, scroll_target, &fill);
+        ::ScrollConsoleScreenBufferA(s_stdout_handle, &scroll_rect, nullptr, scroll_target, &fill);
     }
 
     static void windows_set_cursor_pos(const coord& pos) {
@@ -111,6 +111,8 @@ namespace libchess::console {
 
     static void windows_reset_color() { windows_set_color(color_default, color_default); }
 
+    static void windows_verify_locale() { setlocale(LC_ALL, "en_US.UTF-8"); }
+
     static std::optional<DWORD> s_previous_stdin_mode;
     static void windows_setup_input_capture() {
         if (s_previous_stdin_mode.has_value()) {
@@ -136,15 +138,52 @@ namespace libchess::console {
     }
 
     static char windows_capture_character_blocking() {
-        CHAR buffer[1];
-        DWORD characters_read;
+        INPUT_RECORD record;
+        DWORD inputs_read;
 
-        if (!::ReadConsoleA(s_stdin_handle, buffer, 1, &characters_read, nullptr) ||
-            characters_read != 1) {
-            buffer[0] = (CHAR)-1;
+        while (true) {
+            if (::ReadConsoleInputA(s_stdin_handle, &record, 1, &inputs_read) && inputs_read != 0) {
+                if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown) {
+                    char character = record.Event.KeyEvent.uChar.AsciiChar;
+                    if (character != '\0') {
+                        return character;
+                    } else {
+                        // using ascii box control characters as code
+                        // im lazy
+                        switch (record.Event.KeyEvent.wVirtualKeyCode) {
+                        case VK_UP:
+                            return (char)17;
+                        case VK_DOWN:
+                            return (char)18;
+                        case VK_LEFT:
+                            return (char)19;
+                        case VK_RIGHT:
+                            return (char)20;
+                        default:
+                            // nothing
+                            break;
+                        }
+                    }
+                }
+            } else {
+                return (char)-1;
+            }
         }
+    }
 
-        return (char)buffer[0];
+    static keystroke_type windows_parse_keystroke(char c, void** state) {
+        switch (c) { // see windows_capture_character_blocking
+        case (char)17:
+            return keystroke_type::up_arrow;
+        case (char)18:
+            return keystroke_type::down_arrow;
+        case (char)19:
+            return keystroke_type::left_arrow;
+        case (char)20:
+            return keystroke_type::right_arrow;
+        default:
+            return keystroke_type::character;
+        }
     }
 
     static void windows_set_thread_name(std::thread& thread, const std::string& name) {
@@ -173,12 +212,15 @@ namespace libchess::console {
         backend.set_color = windows_set_color;
         backend.reset_color = windows_reset_color;
 
-        backend.verify_locale = nullptr;
+        backend.verify_locale = windows_verify_locale;
         backend.flush_console = nullptr;
 
         backend.setup_input_capture = windows_setup_input_capture;
         backend.cleanup_input_capture = windows_cleanup_input_capture;
         backend.capture_character_blocking = windows_capture_character_blocking;
+
+        backend.parse_keystroke = windows_parse_keystroke;
+        backend.destroy_keystroke_state = nullptr;
 
         backend.set_thread_name = windows_set_thread_name;
     }

@@ -19,15 +19,21 @@
 #include "renderer.h"
 
 namespace libchess::console {
-    struct client_callback_delegate {
-        client_callback_delegate(client* _this) { this->_this = _this; }
+    class client_callback_delegate {
+    public:
+        client_callback_delegate(client* _this) { m_this = _this; }
+        ~client_callback_delegate() = default;
+
+        client_callback_delegate(const client_callback_delegate&) = delete;
+        client_callback_delegate& operator=(const client_callback_delegate&) = delete;
 
         void key_callback(char c) {
-            util::mutex_lock lock(_this->m_mutex);
-            _this->m_console->process_keystroke(c);
+            util::mutex_lock lock(m_this->m_mutex);
+            m_this->m_console->process_keystroke(c);
         }
 
-        client* _this = nullptr;
+    private:
+        client* m_this = nullptr;
     };
 
     static void client_key_callback(char c, void* user_data) {
@@ -47,6 +53,7 @@ namespace libchess::console {
         if (_client) {
             _client->register_commands();
             _client->redraw();
+            _client->m_console->set_accept_input(true);
         }
 
         return _client;
@@ -81,10 +88,34 @@ namespace libchess::console {
         m_console = game_console::create();
     }
 
+    class console_lock {
+    public:
+        console_lock(std::shared_ptr<game_console> console) {
+            m_console = console;
+            m_console->set_accept_input(false);
+        }
+
+        ~console_lock() { m_console->set_accept_input(true); }
+
+        console_lock(const console_lock&) = delete;
+        console_lock& operator=(const console_lock&) = delete;
+
+    private:
+        std::shared_ptr<game_console> m_console;
+    };
+
+#define BIND_CLIENT_COMMAND(func)                                                                  \
+    [this](auto&&... args) -> decltype(auto) {                                                     \
+        console_lock lock(m_console);                                                              \
+        return func(std::forward<decltype(args)>(args)...);                                        \
+    }
+
     void client::register_commands() {
         command_factory factory(m_console);
 
-        // todo: register commands
+        // quit command
+        factory.add_alias("quit");
+        factory.set_callback(BIND_CLIENT_COMMAND(client::command_quit));
     }
 
     void client::redraw() {
@@ -154,4 +185,6 @@ namespace libchess::console {
             renderer::render(offset + coord(board::width * 2, c), L'\x2563');
         }
     }
+
+    void client::command_quit(const std::vector<std::string>& args) { m_should_quit = true; }
 } // namespace libchess::console

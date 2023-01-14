@@ -38,6 +38,9 @@ namespace libchess::console {
         void redraw_board(const coord& offset);
         void redraw_board_frame(const coord& offset);
 
+        // commands
+        void command_quit(const std::vector<std::string>& args);
+
         engine m_engine;
         std::shared_ptr<game_console> m_console;
         std::mutex m_mutex;
@@ -45,6 +48,6 @@ namespace libchess::console {
         size_t m_key_callback;
         bool m_should_quit;
 
-        friend struct client_callback_delegate;
+        friend class client_callback_delegate;
     };
 } // namespace libchess::console
