@@ -93,26 +93,11 @@ namespace libchess::console {
         m_console = game_console::create();
     }
 
-    class console_lock {
-    public:
-        console_lock(std::shared_ptr<game_console> console) {
-            m_console = console;
-            m_console->set_accept_input(false);
-        }
-
-        ~console_lock() { m_console->set_accept_input(true); }
-
-        console_lock(const console_lock&) = delete;
-        console_lock& operator=(const console_lock&) = delete;
-
-    private:
-        std::shared_ptr<game_console> m_console;
-    };
-
 #define BIND_CLIENT_COMMAND(func)                                                                  \
-    [this](auto&&... args) -> decltype(auto) {                                                     \
-        console_lock lock(m_console);                                                              \
-        return func(std::forward<decltype(args)>(args)...);                                        \
+    [this](const command_context& context) {                                                       \
+        context.set_accept_input(false);                                                           \
+        this->func(context);                                                                       \
+        context.set_accept_input(true);                                                            \
     }
 
     void client::register_commands() {
@@ -191,5 +176,5 @@ namespace libchess::console {
         }
     }
 
-    void client::command_quit(const std::vector<std::string>& args) { m_should_quit = true; }
+    void client::command_quit(const command_context& context) { m_should_quit = true; }
 } // namespace libchess::console

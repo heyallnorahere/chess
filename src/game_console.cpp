@@ -33,7 +33,7 @@ namespace libchess::console {
 
     void game_console::set_accept_input(bool accept) {
         util::mutex_lock lock(m_mutex);
-        m_accept_input = accept;
+        set_accept_input_internal(accept); // for consistency
     }
 
     void game_console::process_keystroke(char c) {
@@ -167,19 +167,20 @@ namespace libchess::console {
         }
 
         std::string command_name = command_arguments[0];
-        auto submit_line_callback = [this](const std::string& line) { submit_line_internal(line); };
-
         if (m_commands.find(command_name) != m_commands.end()) {
-            auto info = m_commands.at(command_name);
-
             auto it = command_arguments.begin();
             it++;
 
             std::vector<std::string> args(it, command_arguments.end());
-            info->callback(args, submit_line_callback);
-        } else if (m_commands.find(s_fallback_alias) != m_commands.end()) {
+            command_context context(shared_from_this(), args);
+
             auto info = m_commands.at(command_name);
-            info->callback(command_arguments, submit_line_callback);
+            info->callback(context);
+        } else if (m_commands.find(s_fallback_alias) != m_commands.end()) {
+            command_context context(shared_from_this(), command_arguments);
+
+            auto info = m_commands.at(command_name);
+            info->callback(context);
         } else {
             submit_line_internal(
                 "could not find either the requested command or a fallback - continuing");
@@ -193,6 +194,25 @@ namespace libchess::console {
         while (m_log.size() > 30) {
             m_log.pop_front();
         }
+    }
+
+    void game_console::set_accept_input_internal(bool accept) {
+        m_accept_input = accept;
+        // maybe call events? idk
+    }
+
+    void command_context::submit_line(const std::string& line) const {
+        m_console->submit_line_internal(line);
+    }
+
+    void command_context::set_accept_input(bool accept) const {
+        m_console->set_accept_input_internal(accept);
+    }
+
+    command_context::command_context(std::shared_ptr<game_console> console,
+                                     const std::vector<std::string>& args) {
+        m_console = console;
+        m_args = args;
     }
 
     void command_factory::new_command() {

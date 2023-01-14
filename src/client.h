@@ -18,7 +18,7 @@
 #include "game_console.h"
 
 namespace libchess::console {
-    class client : std::enable_shared_from_this<client> {
+    class client : public std::enable_shared_from_this<client> {
     public:
         static std::shared_ptr<client> create(const std::optional<std::string>& fen = {});
 
@@ -40,7 +40,7 @@ namespace libchess::console {
         void redraw_board_frame(const coord& offset);
 
         // commands
-        void command_quit(const std::vector<std::string>& args);
+        void command_quit(const command_context& context);
 
         engine m_engine;
         std::shared_ptr<game_console> m_console;

@@ -32,7 +32,7 @@ namespace libchess {
         player_color color;
     };
 
-    class board : std::enable_shared_from_this<board> {
+    class board : public std::enable_shared_from_this<board> {
     public:
         static constexpr size_t width = 8;
         static constexpr size_t size = width * width;

@@ -17,9 +17,8 @@
 #pragma once
 
 namespace libchess::console {
-    using submit_line_callback = std::function<void(const std::string&)>;
-    using console_command_callback =
-        std::function<void(const std::vector<std::string>&, const submit_line_callback&)>;
+    class command_context;
+    using console_command_callback = std::function<void(const command_context&)>;
 
     struct console_command_t {
         console_command_callback callback;
@@ -27,7 +26,7 @@ namespace libchess::console {
         std::string description;
     };
 
-    class game_console : std::enable_shared_from_this<game_console> {
+    class game_console : public std::enable_shared_from_this<game_console> {
     public:
         static std::shared_ptr<game_console> create();
 
@@ -49,6 +48,7 @@ namespace libchess::console {
 
         void execute_command_internal(const std::string& command);
         void submit_line_internal(const std::string& line);
+        void set_accept_input_internal(bool accept);
 
         std::unordered_map<std::string, std::shared_ptr<console_command_t>> m_commands;
         std::list<std::string> m_log;
@@ -61,6 +61,29 @@ namespace libchess::console {
         void* m_keystroke_state;
 
         friend class command_factory;
+        friend class command_context;
+    };
+
+    class command_context {
+    public:
+        ~command_context() = default;
+
+        command_context(const command_context&) = delete;
+        command_context& operator=(const command_context&) = delete;
+
+        void submit_line(const std::string& line) const;
+        void set_accept_input(bool accept) const;
+
+        const std::vector<std::string>& get_args() const { return m_args; }
+
+    private:
+        command_context(std::shared_ptr<game_console> console,
+                        const std::vector<std::string>& args);
+
+        std::shared_ptr<game_console> m_console;
+        std::vector<std::string> m_args;
+
+        friend class game_console;
     };
 
     class command_factory {
