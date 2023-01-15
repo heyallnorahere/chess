@@ -18,7 +18,7 @@
 
 namespace libchess::console {
     class command_context;
-    using console_command_callback = std::function<void(const command_context&)>;
+    using console_command_callback = std::function<void(command_context&)>;
 
     struct console_command_t {
         console_command_callback callback;
@@ -41,7 +41,12 @@ namespace libchess::console {
 
         void submit_line(const std::string& line);
         void get_log(const std::function<void(const std::list<std::string>&)>& callback);
+
         std::string get_current_command();
+        size_t get_cursor_pos();
+
+        size_t add_update_callback(const std::function<void()>& callback);
+        bool remove_update_callback(size_t index);
 
     private:
         game_console();
@@ -51,6 +56,7 @@ namespace libchess::console {
         void set_accept_input_internal(bool accept);
 
         std::unordered_map<std::string, std::shared_ptr<console_command_t>> m_commands;
+        std::vector<std::optional<std::function<void()>>> m_update_callbacks;
         std::list<std::string> m_log;
         std::mutex m_mutex;
 
@@ -71,8 +77,8 @@ namespace libchess::console {
         command_context(const command_context&) = delete;
         command_context& operator=(const command_context&) = delete;
 
-        void submit_line(const std::string& line) const;
-        void set_accept_input(bool accept) const;
+        void submit_line(const std::string& line);
+        void set_accept_input(bool accept);
 
         const std::vector<std::string>& get_args() const { return m_args; }
 
@@ -82,6 +88,7 @@ namespace libchess::console {
 
         std::shared_ptr<game_console> m_console;
         std::vector<std::string> m_args;
+        std::mutex m_mutex;
 
         friend class game_console;
     };
@@ -111,5 +118,6 @@ namespace libchess::console {
 
         std::shared_ptr<game_console> m_console;
         std::shared_ptr<console_command_t> m_current_command;
+        std::mutex m_mutex;
     };
 } // namespace libchess::console

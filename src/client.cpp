@@ -52,7 +52,6 @@ namespace libchess::console {
 
         if (_client) {
             _client->register_commands();
-            _client->redraw();
             _client->m_console->set_accept_input(true);
         }
 
@@ -73,6 +72,17 @@ namespace libchess::console {
         return true;
     }
 
+    void client::update() {
+        util::mutex_lock lock(m_mutex);
+
+        if (m_should_redraw) {
+            redraw();
+            m_should_redraw = false;
+        }
+
+        // todo: update?????
+    }
+
     bool client::should_quit() {
         util::mutex_lock lock(m_mutex);
         return m_should_quit;
@@ -89,12 +99,15 @@ namespace libchess::console {
 
         m_key_callback = renderer::add_key_callback(client_key_callback, this);
         m_should_quit = false;
+        m_should_redraw = true;
 
         m_console = game_console::create();
+        m_console_update_callback =
+            m_console->add_update_callback([this]() mutable { m_should_redraw = true; });
     }
 
 #define BIND_CLIENT_COMMAND(func)                                                                  \
-    [this](const command_context& context) {                                                       \
+    [this](command_context& context) {                                                             \
         context.set_accept_input(false);                                                           \
         this->func(context);                                                                       \
         context.set_accept_input(true);                                                            \
@@ -106,12 +119,90 @@ namespace libchess::console {
         // quit command
         factory.add_alias("quit");
         factory.set_callback(BIND_CLIENT_COMMAND(client::command_quit));
+        factory.set_description("Exit the chess engine.");
+
+        // redraw command
+        factory.new_command();
+        factory.add_alias("redraw");
+        factory.set_callback(BIND_CLIENT_COMMAND(client::command_redraw));
+        factory.set_description("Redraw the screen.");
     }
 
     void client::redraw() {
         redraw_board(coord(0, 0));
+        redraw_console(coord(0, board::width * 2 + 1));
+    }
 
-        // todo: redraw console
+    void client::redraw_console(const coord& offset) {
+        static constexpr int32_t console_width = 50; // temporary
+        static constexpr int32_t console_height = 5; // also temporary
+
+        // corners
+        renderer::render(offset + coord(0, 0), L'\x2554');
+        renderer::render(offset + coord(console_width + 1, 0), L'\x2557');
+        renderer::render(offset + coord(0, console_height + 1), L'\x255a');
+        renderer::render(offset + coord(console_width + 1, console_height + 1), L'\x255d');
+
+        // horizontal lines
+        for (int32_t i = 0; i < console_width; i++) {
+            static constexpr wchar_t line_character = L'\x2550';
+            int32_t x = i + 1;
+
+            renderer::render(offset + coord(x, 0), line_character);
+            renderer::render(offset + coord(x, console_height + 1), line_character);
+        }
+
+        // vertical lines
+        for (int32_t i = 0; i < console_height; i++) {
+            static constexpr wchar_t line_character = L'\x2551';
+            int32_t y = i + 1;
+
+            renderer::render(offset + coord(0, y), line_character);
+            renderer::render(offset + coord(console_width + 1, y), line_character);
+        }
+
+        m_console->get_log([&](const std::list<std::string>& log) {
+            int32_t displayed_messages = std::min(console_height - 1, (int32_t)log.size());
+            for (int32_t i = 0; i < displayed_messages; i++) {
+                auto it = log.rbegin();
+                std::advance(it, i);
+                const auto& message = *it;
+
+                int32_t y = console_height - (i + 1);
+                for (int32_t j = 0; j < console_width; j++) {
+                    int32_t x = j + 1;
+
+                    wchar_t character;
+                    if (j < message.length()) {
+                        character = (wchar_t)message[j];
+                    } else {
+                        character = L' ';
+                    }
+
+                    renderer::render(offset + coord(x, y), character);
+                }
+            }
+        });
+
+        {
+            std::string current_command = m_console->get_current_command();
+            size_t cursor_pos = m_console->get_cursor_pos();
+
+            renderer::render(offset + coord(1, console_height), L'>');
+            for (int32_t i = 0; i < console_width - 1; i++) {
+                auto pos = offset + coord((int32_t)i + 2, console_height);
+
+                if (i == cursor_pos) {
+                    renderer::render(pos, L'\x2588');
+                } else {
+                    if (i < current_command.length()) {
+                        renderer::render(pos, (wchar_t)current_command[i]);
+                    } else {
+                        renderer::render(pos, L' ');
+                    }
+                }
+            }
+        }
     }
 
     void client::redraw_board(const coord& offset) {
@@ -176,5 +267,6 @@ namespace libchess::console {
         }
     }
 
-    void client::command_quit(const command_context& context) { m_should_quit = true; }
+    void client::command_quit(command_context& context) { m_should_quit = true; }
+    void client::command_redraw(command_context& context) { m_should_redraw = true; }
 } // namespace libchess::console

@@ -39,26 +39,35 @@ namespace libchess::console {
     void game_console::process_keystroke(char c) {
         util::mutex_lock lock(m_mutex);
 
+        bool should_update = false;
         auto type = renderer::parse_keystroke(c, &m_keystroke_state);
+
         switch (type) {
         case keystroke_type::character:
             switch (c) {
             case '\r':
                 execute_command_internal(m_current_command);
-                m_current_command.clear();
 
+                m_current_command.clear();
                 m_cursor_pos = 0;
+
+                should_update = true;
                 break;
-            case (char)127: // backspace
+            case (char)8: // backspace characters
+            case (char)127:
                 if (m_cursor_pos > 0) {
                     m_cursor_pos--;
                     m_current_command.replace(m_cursor_pos, 1, "");
+
+                    should_update = true;
                 }
 
                 break;
             default:
                 m_current_command.insert(m_cursor_pos, 1, c);
                 m_cursor_pos++;
+
+                should_update = true;
                 break;
             }
 
@@ -66,18 +75,30 @@ namespace libchess::console {
         case keystroke_type::left_arrow:
             if (m_cursor_pos > 0) {
                 m_cursor_pos--;
+                should_update = true;
             }
 
             break;
         case keystroke_type::right_arrow:
             if (m_cursor_pos < m_current_command.length()) {
                 m_cursor_pos++;
+                should_update = true;
             }
 
             break;
         default:
             // nothing
             break;
+        }
+
+        if (should_update) {
+            for (const auto& callback : m_update_callbacks) {
+                if (!callback.has_value()) {
+                    continue;
+                }
+
+                callback.value()();
+            }
         }
     }
 
@@ -101,6 +122,51 @@ namespace libchess::console {
         return m_current_command;
     }
 
+    size_t game_console::get_cursor_pos() {
+        util::mutex_lock lock(m_mutex);
+        return m_cursor_pos;
+    }
+
+    size_t game_console::add_update_callback(const std::function<void()>& callback) {
+        util::mutex_lock lock(m_mutex);
+
+        std::optional<size_t> found_index;
+        for (size_t i = 0; i < m_update_callbacks.size(); i++) {
+            if (!m_update_callbacks[i].has_value()) {
+                found_index = i;
+                break;
+            }
+        }
+
+        if (found_index.has_value()) {
+            size_t index = found_index.value();
+            m_update_callbacks[index] = callback;
+
+            return index;
+        } else {
+            size_t index = m_update_callbacks.size();
+            m_update_callbacks.push_back(callback);
+
+            return index;
+        }
+    }
+
+    bool game_console::remove_update_callback(size_t index) {
+        util::mutex_lock lock(m_mutex);
+
+        if (index >= m_update_callbacks.size()) {
+            return false;
+        }
+
+        auto& callback = m_update_callbacks[index];
+        if (!callback.has_value()) {
+            return false;
+        }
+
+        callback.reset();
+        return true;
+    }
+
     game_console::game_console() {
         m_accept_input = false;
         m_keystroke_state = nullptr;
@@ -112,6 +178,10 @@ namespace libchess::console {
 
         std::vector<std::string> segments;
         util::split_string(command, ' ', segments, util::string_split_options_omit_empty);
+
+        if (segments.empty()) {
+            return;
+        }
 
         std::vector<std::string> command_arguments;
         if (segments.size() > 1) {
@@ -182,8 +252,7 @@ namespace libchess::console {
             auto info = m_commands.at(command_name);
             info->callback(context);
         } else {
-            submit_line_internal(
-                "could not find either the requested command or a fallback - continuing");
+            submit_line_internal("Invalid command");
         }
     }
 
@@ -194,6 +263,14 @@ namespace libchess::console {
         while (m_log.size() > 30) {
             m_log.pop_front();
         }
+
+        for (const auto& callback : m_update_callbacks) {
+            if (!callback.has_value()) {
+                continue;
+            }
+
+            callback.value()();
+        }
     }
 
     void game_console::set_accept_input_internal(bool accept) {
@@ -201,11 +278,13 @@ namespace libchess::console {
         // maybe call events? idk
     }
 
-    void command_context::submit_line(const std::string& line) const {
+    void command_context::submit_line(const std::string& line) {
+        util::mutex_lock lock(m_mutex);
         m_console->submit_line_internal(line);
     }
 
-    void command_context::set_accept_input(bool accept) const {
+    void command_context::set_accept_input(bool accept) {
+        util::mutex_lock lock(m_mutex);
         m_console->set_accept_input_internal(accept);
     }
 
@@ -216,6 +295,8 @@ namespace libchess::console {
     }
 
     void command_factory::new_command() {
+        util::mutex_lock lock(m_mutex);
+
         submit();
         m_current_command.reset();
     }
@@ -224,11 +305,15 @@ namespace libchess::console {
     bool command_factory::is_fallback() { return has_alias(s_fallback_alias); }
 
     void command_factory::add_alias(const std::string& alias) {
+        util::mutex_lock lock(m_mutex);
+
         verify_command();
         m_current_command->aliases.insert(alias);
     }
 
     bool command_factory::has_alias(const std::string& alias) {
+        util::mutex_lock lock(m_mutex);
+
         if (!m_current_command) {
             return false;
         }
@@ -237,11 +322,15 @@ namespace libchess::console {
     }
 
     void command_factory::set_description(const std::string& desc) {
+        util::mutex_lock lock(m_mutex);
+
         verify_command();
         m_current_command->description = desc;
     }
 
     void command_factory::set_callback(const console_command_callback& callback) {
+        util::mutex_lock lock(m_mutex);
+
         verify_command();
         m_current_command->callback = callback;
     }

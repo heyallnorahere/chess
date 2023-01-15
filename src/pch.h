@@ -33,3 +33,4 @@
 #include <optional>
 #include <functional>
 #include <utility>
+#include <algorithm>

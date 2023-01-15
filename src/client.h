@@ -26,6 +26,7 @@ namespace libchess::console {
 
         bool load_fen(const std::string& fen);
 
+        void update();
         bool should_quit();
 
         void get_console(const std::function<void(std::shared_ptr<game_console>)>& callback);
@@ -36,18 +37,24 @@ namespace libchess::console {
         void register_commands();
 
         void redraw();
+        void redraw_console(const coord& offset);
+
         void redraw_board(const coord& offset);
         void redraw_board_frame(const coord& offset);
 
         // commands
-        void command_quit(const command_context& context);
+        void command_quit(command_context& context);
+        void command_redraw(command_context& context);
+
+        std::shared_ptr<game_console> m_console;
+        size_t m_console_update_callback;
 
         engine m_engine;
-        std::shared_ptr<game_console> m_console;
         std::mutex m_mutex;
 
         size_t m_key_callback;
         bool m_should_quit;
+        bool m_should_redraw;
 
         friend class client_callback_delegate;
     };

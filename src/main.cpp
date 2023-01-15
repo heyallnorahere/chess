@@ -25,6 +25,8 @@ namespace libchess::console {
 
         while (true) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+            _client->update();
             renderer::flush();
 
             if (_client->should_quit()) {
