@@ -18,6 +18,9 @@
 #include "coord.h"
 #include "board.h"
 
+#define LIBCHESS_BIND_METHOD(func)                                                                 \
+    [this](auto&&... args) -> decltype(auto) { return func(std::forward<decltype(args)>(args)...); }
+
 namespace libchess::util {
     enum string_split_options : uint32_t {
         string_split_options_none = 0,

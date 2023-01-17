@@ -24,11 +24,6 @@ namespace libchess::console {
         uint32_t fg, bg;
     };
 
-    struct key_callback_desc_t {
-        key_callback callback;
-        void* user_data;
-    };
-
     struct renderer_info_t {
         cell_info_t* buffer;
         size_t buffer_size;
@@ -37,7 +32,7 @@ namespace libchess::console {
         renderer_backend_t backend;
         std::unordered_set<coord> rendered_indices;
 
-        std::vector<std::optional<key_callback_desc_t>> key_callbacks;
+        std::vector<std::optional<std::function<void(char)>>> key_callbacks;
         std::mutex key_callback_mutex;
     };
 
@@ -52,8 +47,7 @@ namespace libchess::console {
                     continue;
                 }
 
-                const auto& data = callback.value();
-                data.callback(c, data.user_data);
+                callback.value()(c);
             }
         }
     }
@@ -182,7 +176,7 @@ namespace libchess::console {
         s_renderer_info->rendered_indices.insert(pos);
     }
 
-    size_t renderer::add_key_callback(key_callback callback, void* user_data) {
+    size_t renderer::add_key_callback(const std::function<void(char)>& callback) {
         util::mutex_lock lock(s_renderer_info->key_callback_mutex);
 
         std::optional<size_t> found_index;
@@ -195,18 +189,14 @@ namespace libchess::console {
             break;
         }
 
-        key_callback_desc_t data;
-        data.callback = callback;
-        data.user_data = user_data;
-
         if (found_index.has_value()) {
             size_t index = found_index.value();
-            s_renderer_info->key_callbacks[index] = data;
+            s_renderer_info->key_callbacks[index] = callback;
 
             return index;
         } else {
             size_t index = s_renderer_info->key_callbacks.size();
-            s_renderer_info->key_callbacks.emplace_back(data);
+            s_renderer_info->key_callbacks.push_back(callback);
 
             return index;
         }

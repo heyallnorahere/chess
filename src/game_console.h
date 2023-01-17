@@ -40,13 +40,20 @@ namespace libchess::console {
         void execute_command(const std::string& command);
 
         void submit_line(const std::string& line);
-        void get_log(const std::function<void(const std::list<std::string>&)>& callback);
+        void get_log(const std::function<void(const std::list<std::string>&)>& callback,
+                     size_t max_line_width = 0);
 
         std::string get_current_command();
         size_t get_cursor_pos();
 
         size_t add_update_callback(const std::function<void()>& callback);
         bool remove_update_callback(size_t index);
+
+        size_t add_scroll_callback(const std::function<void(int32_t)>& callback);
+        bool remove_scroll_callback(size_t index);
+
+        size_t add_line_submitted_callback(const std::function<void(const std::string)>& callback);
+        bool remove_line_submitted_callback(size_t index);
 
     private:
         game_console();
@@ -55,8 +62,64 @@ namespace libchess::console {
         void submit_line_internal(const std::string& line);
         void set_accept_input_internal(bool accept);
 
-        std::unordered_map<std::string, std::shared_ptr<console_command_t>> m_commands;
+        template <typename T>
+        size_t add_callback(std::vector<std::optional<std::function<T>>>& callbacks,
+                            const std::function<T>& callback) {
+            std::optional<size_t> found_index;
+            for (size_t i = 0; i < callbacks.size(); i++) {
+                if (!callbacks[i].has_value()) {
+                    found_index = i;
+                    break;
+                }
+            }
+
+            if (found_index.has_value()) {
+                size_t index = found_index.value();
+                callbacks[index] = callback;
+
+                return index;
+            } else {
+                size_t index = callbacks.size();
+                callbacks.push_back(callback);
+
+                return index;
+            }
+        }
+
+        template <typename T>
+        bool remove_callback(std::vector<std::optional<std::function<T>>>& callbacks,
+                             size_t index) {
+            if (index >= callbacks.size()) {
+                return false;
+            }
+
+            auto& callback = callbacks[index];
+            if (!callback.has_value()) {
+                return false;
+            }
+
+            callback.reset();
+            return true;
+        }
+
+        template <typename T, typename... Args>
+        void call_event(const std::vector<std::optional<std::function<T>>>& callbacks,
+                        Args&&... args) {
+            for (const auto& callback : callbacks) {
+                if (!callback.has_value()) {
+                    continue;
+                }
+
+                callback.value()(std::forward<Args>(args)...);
+            }
+        }
+
         std::vector<std::optional<std::function<void()>>> m_update_callbacks;
+        std::vector<std::optional<std::function<void(int32_t)>>> m_scroll_callbacks;
+        std::vector<std::optional<std::function<void(const std::string)>>>
+            m_line_submitted_callbacks;
+
+        std::unordered_map<std::string, std::shared_ptr<console_command_t>> m_commands;
         std::list<std::string> m_log;
         std::mutex m_mutex;
 

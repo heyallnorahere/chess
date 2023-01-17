@@ -40,8 +40,9 @@ namespace libchess::console {
         util::mutex_lock lock(m_mutex);
 
         bool should_update = false;
-        auto type = renderer::parse_keystroke(c, &m_keystroke_state);
+        int32_t scroll_offset = 0;
 
+        auto type = renderer::parse_keystroke(c, &m_keystroke_state);
         switch (type) {
         case keystroke_type::character:
             switch (c) {
@@ -86,19 +87,23 @@ namespace libchess::console {
             }
 
             break;
+        case keystroke_type::up_arrow:
+            scroll_offset++;
+            break;
+        case keystroke_type::down_arrow:
+            scroll_offset--;
+            break;
         default:
             // nothing
             break;
         }
 
-        if (should_update) {
-            for (const auto& callback : m_update_callbacks) {
-                if (!callback.has_value()) {
-                    continue;
-                }
+        if (scroll_offset != 0) {
+            call_event(m_scroll_callbacks, scroll_offset);
+        }
 
-                callback.value()();
-            }
+        if (should_update) {
+            call_event(m_update_callbacks);
         }
     }
 
@@ -112,9 +117,28 @@ namespace libchess::console {
         submit_line_internal(line);
     }
 
-    void game_console::get_log(const std::function<void(const std::list<std::string>&)>& callback) {
+    void game_console::get_log(const std::function<void(const std::list<std::string>&)>& callback,
+                               size_t max_line_width) {
         util::mutex_lock lock(m_mutex);
-        callback(m_log);
+
+        if (max_line_width > 0) {
+            std::list<std::string> temp_log;
+            for (const auto& line : m_log) {
+                if (line.length() > max_line_width) {
+                    size_t current_pos = 0;
+                    do {
+                        temp_log.push_back(line.substr(current_pos, max_line_width));
+                        current_pos += max_line_width;
+                    } while (current_pos < line.length());
+                } else {
+                    temp_log.push_back(line);
+                }
+            }
+
+            callback(temp_log);
+        } else {
+            callback(m_log);
+        }
     }
 
     std::string game_console::get_current_command() {
@@ -129,42 +153,32 @@ namespace libchess::console {
 
     size_t game_console::add_update_callback(const std::function<void()>& callback) {
         util::mutex_lock lock(m_mutex);
-
-        std::optional<size_t> found_index;
-        for (size_t i = 0; i < m_update_callbacks.size(); i++) {
-            if (!m_update_callbacks[i].has_value()) {
-                found_index = i;
-                break;
-            }
-        }
-
-        if (found_index.has_value()) {
-            size_t index = found_index.value();
-            m_update_callbacks[index] = callback;
-
-            return index;
-        } else {
-            size_t index = m_update_callbacks.size();
-            m_update_callbacks.push_back(callback);
-
-            return index;
-        }
+        return add_callback(m_update_callbacks, callback);
     }
 
     bool game_console::remove_update_callback(size_t index) {
         util::mutex_lock lock(m_mutex);
+        return remove_callback(m_update_callbacks, index);
+    }
 
-        if (index >= m_update_callbacks.size()) {
-            return false;
-        }
+    size_t game_console::add_scroll_callback(const std::function<void(int32_t)>& callback) {
+        util::mutex_lock lock(m_mutex);
+        return add_callback(m_scroll_callbacks, callback);
+    }
 
-        auto& callback = m_update_callbacks[index];
-        if (!callback.has_value()) {
-            return false;
-        }
+    bool game_console::remove_scroll_callback(size_t index) {
+        util::mutex_lock lock(m_mutex);
+        return remove_callback(m_scroll_callbacks, index);
+    }
 
-        callback.reset();
-        return true;
+    size_t game_console::add_line_submitted_callback(const std::function<void(const std::string)>& callback) {
+        util::mutex_lock lock(m_mutex);
+        return add_callback(m_line_submitted_callbacks, callback);
+    }
+
+    bool game_console::remove_line_submitted_callback(size_t index) {
+        util::mutex_lock lock(m_mutex);
+        return remove_callback(m_line_submitted_callbacks, index);
     }
 
     game_console::game_console() {
@@ -264,13 +278,7 @@ namespace libchess::console {
             m_log.pop_front();
         }
 
-        for (const auto& callback : m_update_callbacks) {
-            if (!callback.has_value()) {
-                continue;
-            }
-
-            callback.value()();
-        }
+        call_event(m_line_submitted_callbacks, line);
     }
 
     void game_console::set_accept_input_internal(bool accept) {

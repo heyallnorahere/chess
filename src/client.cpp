@@ -19,28 +19,6 @@
 #include "renderer.h"
 
 namespace libchess::console {
-    class client_callback_delegate {
-    public:
-        client_callback_delegate(client* _this) { m_this = _this; }
-        ~client_callback_delegate() = default;
-
-        client_callback_delegate(const client_callback_delegate&) = delete;
-        client_callback_delegate& operator=(const client_callback_delegate&) = delete;
-
-        void key_callback(char c) {
-            util::mutex_lock lock(m_this->m_mutex);
-            m_this->m_console->process_keystroke(c);
-        }
-
-    private:
-        client* m_this = nullptr;
-    };
-
-    static void client_key_callback(char c, void* user_data) {
-        client_callback_delegate delegate((client*)user_data);
-        delegate.key_callback(c);
-    }
-
     std::shared_ptr<client> client::create(const std::optional<std::string>& fen) {
         auto _client = std::shared_ptr<client>(new client);
 
@@ -58,7 +36,13 @@ namespace libchess::console {
         return _client;
     }
 
-    client::~client() { renderer::remove_key_callback(m_key_callback); }
+    client::~client() {
+        renderer::remove_key_callback(m_key_callback);
+
+        m_console->remove_update_callback(m_console_update_callback);
+        m_console->remove_scroll_callback(m_console_scroll_callback);
+        m_console->remove_line_submitted_callback(m_console_line_submitted_callback);
+    }
 
     bool client::load_fen(const std::string& fen) {
         util::mutex_lock lock(m_mutex);
@@ -97,19 +81,40 @@ namespace libchess::console {
         auto _board = board::create_default();
         m_engine.set_board(_board);
 
-        m_key_callback = renderer::add_key_callback(client_key_callback, this);
+        m_key_callback = renderer::add_key_callback(LIBCHESS_BIND_METHOD(client::on_keystroke));
         m_should_quit = false;
         m_should_redraw = true;
 
+        m_scroll_position = -1;
+        m_scroll_increment = 0;
+        m_reset_scroll_position = false;
+
         m_console = game_console::create();
-        m_console_update_callback =
-            m_console->add_update_callback([this]() mutable { m_should_redraw = true; });
+        m_console_update_callback = m_console->add_update_callback([this]() mutable {
+            m_reset_scroll_position = true;
+            m_should_redraw = true;
+        });
+
+        m_console_scroll_callback =
+            m_console->add_scroll_callback([this](int32_t increment) mutable {
+                m_scroll_increment += increment;
+                m_should_redraw = true;
+            });
+
+        m_console_line_submitted_callback =
+            m_console->add_line_submitted_callback([this](const std::string& line) mutable {
+                if (m_scroll_position >= 0) {
+                    m_scroll_increment++;
+                }
+
+                m_should_redraw = true;
+            });
     }
 
 #define BIND_CLIENT_COMMAND(func)                                                                  \
     [this](command_context& context) {                                                             \
         context.set_accept_input(false);                                                           \
-        this->func(context);                                                                       \
+        func(context);                                                                             \
         context.set_accept_input(true);                                                            \
     }
 
@@ -126,6 +131,11 @@ namespace libchess::console {
         factory.add_alias("redraw");
         factory.set_callback(BIND_CLIENT_COMMAND(client::command_redraw));
         factory.set_description("Redraw the screen.");
+    }
+
+    void client::on_keystroke(char keystroke) {
+        util::mutex_lock lock(m_mutex);
+        m_console->process_keystroke(keystroke);
     }
 
     void client::redraw() {
@@ -161,28 +171,60 @@ namespace libchess::console {
             renderer::render(offset + coord(console_width + 1, y), line_character);
         }
 
-        m_console->get_log([&](const std::list<std::string>& log) {
-            int32_t displayed_messages = std::min(console_height - 1, (int32_t)log.size());
-            for (int32_t i = 0; i < displayed_messages; i++) {
-                auto it = log.rbegin();
-                std::advance(it, i);
-                const auto& message = *it;
+        m_console->get_log(
+            [&](const std::list<std::string>& log) {
+                int32_t scroll_pos = m_scroll_position;
+                int32_t log_size = (int32_t)log.size();
 
-                int32_t y = console_height - (i + 1);
-                for (int32_t j = 0; j < console_width; j++) {
-                    int32_t x = j + 1;
+                if (scroll_pos < 0) {
+                    scroll_pos = 0;
+                }
 
-                    wchar_t character;
-                    if (j < message.length()) {
-                        character = (wchar_t)message[j];
-                    } else {
-                        character = L' ';
+                scroll_pos += m_scroll_increment;
+                if (m_reset_scroll_position) {
+                    scroll_pos = 0;
+                }
+
+                scroll_pos = std::min(scroll_pos, log_size - 1);
+                scroll_pos = std::max(scroll_pos, 0);
+
+                for (int32_t i = 0; i < console_height - 1; i++) {
+                    std::string message;
+                    if (i < log_size - scroll_pos) {
+                        auto it = log.rbegin();
+                        std::advance(it, i + scroll_pos);
+                        message = *it;
                     }
 
-                    renderer::render(offset + coord(x, y), character);
+                    int32_t y = console_height - (i + 1);
+                    for (int32_t j = 0; j < console_width; j++) {
+                        int32_t x = j + 1;
+
+                        wchar_t character;
+                        if (j < message.length()) {
+                            character = (wchar_t)message[j];
+                        } else {
+                            character = L' ';
+                        }
+
+                        renderer::render(offset + coord(x, y), character);
+                    }
                 }
-            }
-        });
+
+                if (m_scroll_increment != 0) {
+                    m_scroll_increment = 0;
+
+                    if (scroll_pos > 0) {
+                        m_scroll_position = scroll_pos;
+                    }
+                }
+
+                if (m_reset_scroll_position) {
+                    m_scroll_position = -1;
+                    m_reset_scroll_position = false;
+                }
+            },
+            (size_t)console_width);
 
         {
             std::string current_command = m_console->get_current_command();
@@ -268,5 +310,8 @@ namespace libchess::console {
     }
 
     void client::command_quit(command_context& context) { m_should_quit = true; }
-    void client::command_redraw(command_context& context) { m_should_redraw = true; }
+
+    void client::command_redraw(command_context& context) {
+        context.submit_line("Console redrawn!"); // should trigger a console redraw
+    }
 } // namespace libchess::console

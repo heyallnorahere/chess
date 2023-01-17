@@ -35,6 +35,7 @@ namespace libchess::console {
         client();
 
         void register_commands();
+        void on_keystroke(char keystroke);
 
         void redraw();
         void redraw_console(const coord& offset);
@@ -47,7 +48,8 @@ namespace libchess::console {
         void command_redraw(command_context& context);
 
         std::shared_ptr<game_console> m_console;
-        size_t m_console_update_callback;
+        size_t m_console_update_callback, m_console_scroll_callback,
+            m_console_line_submitted_callback;
 
         engine m_engine;
         std::mutex m_mutex;
@@ -56,6 +58,7 @@ namespace libchess::console {
         bool m_should_quit;
         bool m_should_redraw;
 
-        friend class client_callback_delegate;
+        bool m_reset_scroll_position;
+        int32_t m_scroll_position, m_scroll_increment;
     };
 } // namespace libchess::console

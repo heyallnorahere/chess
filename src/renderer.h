@@ -29,16 +29,8 @@ namespace libchess::console {
         color_default = 9
     };
 
-    enum class keystroke_type {
-        up_arrow,
-        down_arrow,
-        left_arrow,
-        right_arrow,
-        character,
-        escape
-    };
+    enum class keystroke_type { up_arrow, down_arrow, left_arrow, right_arrow, character, escape };
 
-    using key_callback = void (*)(char, void*);
     class renderer {
     public:
         renderer() = delete;
@@ -52,7 +44,7 @@ namespace libchess::console {
         static void render(const coord& pos, wchar_t character, uint32_t fg = color_default,
                            uint32_t bg = color_default);
 
-        static size_t add_key_callback(key_callback callback, void* user_data = nullptr);
+        static size_t add_key_callback(const std::function<void(char)>& callback);
         static bool remove_key_callback(size_t index);
 
         static keystroke_type parse_keystroke(char c, void** state);
