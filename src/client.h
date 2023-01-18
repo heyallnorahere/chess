@@ -34,6 +34,8 @@ namespace libchess::console {
     private:
         client();
 
+        bool load_fen_internal(const std::string& fen);
+
         void register_commands();
         void on_keystroke(char keystroke);
 
@@ -46,12 +48,17 @@ namespace libchess::console {
         // commands
         void command_quit(command_context& context);
         void command_redraw(command_context& context);
+        void command_load_fen(command_context& context);
+
+        void command_move(command_context& context);
+        void command_promote(command_context& context);
 
         std::shared_ptr<game_console> m_console;
         size_t m_console_update_callback, m_console_scroll_callback,
             m_console_line_submitted_callback;
 
         engine m_engine;
+        std::optional<coord> m_promotable_pawn;
         std::mutex m_mutex;
 
         size_t m_key_callback;

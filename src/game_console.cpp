@@ -263,7 +263,7 @@ namespace libchess::console {
         } else if (m_commands.find(s_fallback_alias) != m_commands.end()) {
             command_context context(shared_from_this(), command_arguments);
 
-            auto info = m_commands.at(command_name);
+            auto info = m_commands.at(s_fallback_alias);
             info->callback(context);
         } else {
             submit_line_internal("Invalid command");
@@ -274,7 +274,7 @@ namespace libchess::console {
         m_log.push_back(line);
 
         // placeholder limit
-        while (m_log.size() > 30) {
+        while (m_log.size() > 40) {
             m_log.pop_front();
         }
 

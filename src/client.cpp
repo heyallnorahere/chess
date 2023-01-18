@@ -46,14 +46,7 @@ namespace libchess::console {
 
     bool client::load_fen(const std::string& fen) {
         util::mutex_lock lock(m_mutex);
-
-        auto _board = board::create(fen);
-        if (!_board) {
-            return false;
-        }
-
-        m_engine.set_board(_board);
-        return true;
+        return load_fen_internal(fen);
     }
 
     void client::update() {
@@ -111,6 +104,18 @@ namespace libchess::console {
             });
     }
 
+    bool client::load_fen_internal(const std::string& fen) {
+        auto _board = board::create(fen);
+        if (!_board) {
+            return false;
+        }
+
+        m_engine.set_board(_board);
+        m_promotable_pawn.reset();
+
+        return true;
+    }
+
 #define BIND_CLIENT_COMMAND(func)                                                                  \
     [this](command_context& context) {                                                             \
         context.set_accept_input(false);                                                           \
@@ -131,6 +136,25 @@ namespace libchess::console {
         factory.add_alias("redraw");
         factory.set_callback(BIND_CLIENT_COMMAND(client::command_redraw));
         factory.set_description("Redraw the screen.");
+
+        // load-fen
+        factory.new_command();
+        factory.add_alias("load-fen");
+        factory.set_callback(BIND_CLIENT_COMMAND(client::command_load_fen));
+        factory.set_description("Loads a FEN string onto the board.");
+
+        // move
+        factory.new_command();
+        factory.add_alias("move");
+        factory.set_as_fallback(); // add shorthand
+        factory.set_callback(BIND_CLIENT_COMMAND(client::command_move));
+        factory.set_description("Moves a piece. Cannot move if a pawn is ready to promote.");
+
+        // promote
+        factory.new_command();
+        factory.add_alias("promote");
+        factory.set_callback(BIND_CLIENT_COMMAND(client::command_promote));
+        factory.set_description("Promotes a pawn.");
     }
 
     void client::on_keystroke(char keystroke) {
@@ -313,5 +337,138 @@ namespace libchess::console {
 
     void client::command_redraw(command_context& context) {
         context.submit_line("Console redrawn!"); // should trigger a console redraw
+    }
+
+    void client::command_load_fen(command_context& context) {
+        const auto& args = context.get_args();
+        if (args.empty()) {
+            context.submit_line("No FEN string provided!");
+            return;
+        }
+
+        std::string fen = args[0];
+        if (load_fen_internal(fen)) {
+            context.submit_line(m_engine.serialize_board());
+        } else {
+            context.submit_line("Failed to load FEN string!");
+        }
+    }
+
+    void client::command_move(command_context& context) {
+        const auto& args = context.get_args();
+        if (args.size() != 2) {
+            context.submit_line("Only 2 arguments are accepted!");
+            return;
+        }
+
+        if (m_promotable_pawn.has_value()) {
+            std::string coordinate = util::serialize_coordinate(m_promotable_pawn.value());
+            context.submit_line("Must promote the pawn at " + coordinate +
+                                " before moving any more pieces!");
+
+            return;
+        }
+
+        move_t move;
+        piece_info_t piece;
+
+        if (!util::parse_coordinate(args[0], move.position) ||
+            board::is_out_of_bounds(move.position) || !m_engine.get_piece(move.position, &piece)) {
+            context.submit_line("Invalid initial position!");
+            return;
+        }
+
+        if (!util::parse_coordinate(args[1], move.destination) ||
+            board::is_out_of_bounds(move.destination)) {
+            context.submit_line("Invalid destination position!");
+            return;
+        }
+
+        if (piece.color != m_engine.get_current_turn() || !m_engine.is_move_legal(move)) {
+            context.submit_line("Illegal move!");
+            return;
+        }
+
+        if (!m_engine.commit_move(move)) {
+            context.submit_line("Failed to commit move!");
+            return;
+        } else {
+            context.submit_line(m_engine.serialize_board());
+        }
+
+        if (piece.type == piece_type::pawn) {
+            int32_t dest_y = (piece.color == player_color::white) ? ((int32_t)board::width - 1) : 0;
+            if (move.destination.y == dest_y) {
+                m_promotable_pawn = move.destination;
+
+                std::string coordinate = util::serialize_coordinate(move.destination);
+                context.submit_line("The pawn at " + coordinate + " is ready to promote!");
+            }
+        }
+
+        player_color other_player =
+            (piece.color == player_color::white) ? player_color::black : player_color::white;
+
+        if (m_engine.compute_checkmate(other_player)) {
+            context.submit_line("Checkmate!");
+        } else {
+            std::vector<coord> checking_pieces;
+            if (m_engine.compute_check(other_player, checking_pieces)) {
+                context.submit_line("Check!");
+            }
+        }
+    }
+
+    void client::command_promote(command_context& context) {
+        if (!m_promotable_pawn.has_value()) {
+            context.submit_line("There is no pawn on the board that's ready to promote!");
+            return;
+        }
+
+        const auto& args = context.get_args();
+        if (args.size() != 1) {
+            context.submit_line("Only 1 argument is accepted!");
+            return;
+        }
+
+        std::string requested_type = args[0];
+        std::optional<piece_type> type;
+
+        if (requested_type.length() == 1) {
+            char lower = (char)std::tolower((int)requested_type[0]);
+            switch (lower) {
+            case 'q':
+                type = piece_type::queen;
+                break;
+            case 'r':
+                type = piece_type::rook;
+                break;
+            case 'n':
+                type = piece_type::knight;
+                break;
+            case 'b':
+                type = piece_type::bishop;
+                break;
+            default:
+                // nothing
+                break;
+            }
+        }
+
+        if (!type.has_value()) {
+            context.submit_line("Must use q, r, n, b to code for pieces to promote into!");
+            return;
+        }
+
+        auto pos = m_promotable_pawn.value();
+        piece_info_t piece;
+
+        if (!m_engine.get_piece(pos, &piece)) {
+            context.submit_line("Failed to retrieve original piece to promote!");
+            return;
+        }
+
+        piece.type = type.value();
+        m_engine.set_piece(pos, piece);
     }
 } // namespace libchess::console
