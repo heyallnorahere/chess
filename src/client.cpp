@@ -76,7 +76,9 @@ namespace libchess::console {
 
         m_key_callback = renderer::add_key_callback(LIBCHESS_BIND_METHOD(client::on_keystroke));
         m_should_quit = false;
+
         m_should_redraw = true;
+        m_should_clear = false;
 
         m_scroll_position = -1;
         m_scroll_increment = 0;
@@ -163,6 +165,11 @@ namespace libchess::console {
     }
 
     void client::redraw() {
+        if (m_should_clear) {
+            renderer::clear_screen();
+            m_should_clear = false;
+        }
+
         redraw_board(coord(0, 0));
         redraw_console(coord(0, board::width * 2 + 1));
     }
@@ -336,7 +343,10 @@ namespace libchess::console {
     void client::command_quit(command_context& context) { m_should_quit = true; }
 
     void client::command_redraw(command_context& context) {
-        context.submit_line("Console redrawn!"); // should trigger a console redraw
+        m_should_clear = true;
+        m_should_redraw = true; // just for redundancy
+
+        context.submit_line("Console redrawn!");
     }
 
     void client::command_load_fen(command_context& context) {

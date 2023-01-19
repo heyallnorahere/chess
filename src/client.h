@@ -63,7 +63,9 @@ namespace libchess::console {
 
         size_t m_key_callback;
         bool m_should_quit;
+
         bool m_should_redraw;
+        bool m_should_clear;
 
         bool m_reset_scroll_position;
         int32_t m_scroll_position, m_scroll_increment;

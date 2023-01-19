@@ -131,6 +131,7 @@ namespace libchess::console {
             s_renderer_info->buffer[i].bg = color_default;
         }
 
+        s_renderer_info->backend.set_cursor_pos(coord(0, 0));
         s_renderer_info->backend.clear_screen();
         s_renderer_info->backend.set_color(color_default, color_default);
         s_renderer_info->backend.set_cursor_pos(coord(0, 0));
