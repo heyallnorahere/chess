@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+
+        <_LibraryPrefix Condition="!$([MSBuild]::IsOsPlatform(Windows))">lib</_LibraryPrefix>
+        <_LibraryExtension Condition="$([MSBuild]::IsOsPlatform(Windows))">dll</_LibraryExtension>
+        <_LibraryExtension Condition="$([MSBuild]::IsOsPlatform(Linux))">so</_LibraryExtension>
+        <_LibraryExtension Condition="$([MSBuild]::IsOsPlatform(OSX))">dylib</_LibraryExtension>
+
+        <!-- i know -->
+        <_LibChessNativeOutputDir>$(MSBuildThisFileDirectory)..\..\build\csharp\LibChess.Native\$(Configuration)\</_LibChessNativeOutputDir>
+        <_LibChessNativeLibrary>$(_LibChessNativeOutputDir)$(_LibraryPrefix)LibChess.Native.$(_LibraryExtension)</_LibChessNativeLibrary>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(_LibChessNativeLibrary)">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+</Project>
