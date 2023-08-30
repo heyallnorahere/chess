@@ -28,7 +28,7 @@ namespace libchess {
         std::optional<player_color> color;
         std::optional<int32_t> x, y;
 
-        bool (*filter)(const piece_info_t&, void*) = nullptr;
+        bool (*filter)(const coord&, const piece_info_t&, void*) = nullptr;
         void* filter_data = nullptr;
     };
 

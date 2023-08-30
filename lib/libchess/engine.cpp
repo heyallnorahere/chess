@@ -71,7 +71,7 @@ namespace libchess {
                     continue;
                 }
 
-                if (query.filter != nullptr && !(query.filter(piece, query.filter_data))) {
+                if (query.filter != nullptr && !(query.filter(pos, piece, query.filter_data))) {
                     continue;
                 }
 

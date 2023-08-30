@@ -101,7 +101,7 @@ namespace LibChess
         [DllImport(sNativeLibraryName)]
         public static extern void SetQueryPieceY(IntPtr query, int y);
 
-        public unsafe delegate bool QueryFilter(PieceInfo* piece);
+        public unsafe delegate bool QueryFilter(Coord* position, PieceInfo* piece);
         [DllImport(sNativeLibraryName)]
         public static extern void SetQueryFilter(IntPtr query, QueryFilter filter);
 

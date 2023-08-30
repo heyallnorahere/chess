@@ -34,7 +34,7 @@ namespace LibChess
         public PlayerColor? Color { get; set; }
         public int? X { get; set; }
         public int? Y { get; set; }
-        public Func<PieceInfo, bool>? Filter { get; set; }
+        public Func<Coord, PieceInfo, bool>? Filter { get; set; }
 
         public PieceQuery()
         {
@@ -190,7 +190,7 @@ namespace LibChess
 
             if (query.Filter != null)
             {
-                NativeFunctions.SetQueryFilter(ptr, piece => query.Filter(*piece));
+                NativeFunctions.SetQueryFilter(ptr, (pos, piece) => query.Filter(*pos, *piece));
             }
 
             var pieces = new List<Coord>();

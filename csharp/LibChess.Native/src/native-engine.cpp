@@ -24,10 +24,10 @@ static void engine_piece_callback(const libchess::piece_info_t& piece, void* dat
     }
 }
 
-using query_filter_t = bool (*)(const libchess::piece_info_t*);
-static bool engine_query_filter(const libchess::piece_info_t& piece, void* data) {
+using query_filter_t = bool (*)(const libchess::coord*, const libchess::piece_info_t*);
+static bool engine_query_filter(const libchess::coord& position, const libchess::piece_info_t& piece, void* data) {
     auto callback = (query_filter_t)data;
-    return callback(&piece);
+    return callback(&position, &piece);
 }
 
 extern "C" {
