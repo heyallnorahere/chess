@@ -143,6 +143,10 @@ protected:
     virtual void add_inline_data() override {
         inline_data({ "a1 b1", "k" });
         inline_data({ "h1 g1", "q" });
+        inline_data({ "e1 e2", "" });
+        inline_data({ "e1 d1", "" });
+        inline_data({ "e1 g1", "" });
+        inline_data({ "e1 c1", "" });
     };
 
     virtual void invoke(const std::vector<std::string>& data) override {
@@ -152,17 +156,21 @@ protected:
         libchess::move_t move;
         assert::is_true(parse_move(data[0], move));
 
-        libchess::castle_side expected;
-        switch (data[1][0]) {
-        case 'k':
-            expected = libchess::castle_side_king;
-            break;
-        case 'q':
-            expected = libchess::castle_side_queen;
-            break;
-        default:
-            assert::throw_error();
-            break;
+        uint8_t expected = 0;
+        const std::string& expectedCastlingAvailability = data[1];
+
+        for (int i = 0; i < expectedCastlingAvailability.length(); i++) {
+            switch (data[1][0]) {
+            case 'k':
+                expected |= libchess::castle_side_king;
+                break;
+            case 'q':
+                expected |= libchess::castle_side_queen;
+                break;
+            default:
+                assert::throw_error();
+                break;
+            }
         }
 
         libchess::engine engine(board);

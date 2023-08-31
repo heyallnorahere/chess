@@ -433,18 +433,21 @@ namespace libchess {
             m_board_data->en_passant_target.reset();
         }
 
-        if (piece.type == piece_type::king && std::abs(delta.x) == 2) {
+        if (piece.type == piece_type::king) {
             m_board_data->player_castling_availability[piece.color] = castle_side_none;
 
-            int32_t direction = delta.x / std::abs(delta.x);
-            int32_t rook_x = (direction > 0) ? ((int32_t)board::width - 1) : 0;
-            auto rook_pos = coord(rook_x, move.position.y);
+            if (std::abs(delta.x) == 2) {
 
-            piece_info_t rook;
-            m_board->get_piece(rook_pos, &rook);
+                int32_t direction = delta.x / std::abs(delta.x);
+                int32_t rook_x = (direction > 0) ? ((int32_t)board::width - 1) : 0;
+                auto rook_pos = coord(rook_x, move.position.y);
 
-            m_board->set_piece(rook_pos, { piece_type::none });
-            m_board->set_piece(coord(move.destination.x - direction, move.destination.y), rook);
+                piece_info_t rook;
+                m_board->get_piece(rook_pos, &rook);
+
+                m_board->set_piece(rook_pos, { piece_type::none });
+                m_board->set_piece(coord(move.destination.x - direction, move.destination.y), rook);
+            }
         }
 
         if (piece.type == piece_type::rook) {
