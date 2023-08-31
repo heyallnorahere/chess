@@ -17,6 +17,12 @@
 #pragma once
 #include <libchess.h>
 
+#ifdef LIBCHESS_COMPILER_MSVC
+#define LIBCHESS_API __declspec(dllexport)
+#else
+#define LIBCHESS_API
+#endif
+
 struct native_board_t {
     std::shared_ptr<libchess::board> instance;
 };

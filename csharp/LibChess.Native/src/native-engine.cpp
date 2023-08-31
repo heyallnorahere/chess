@@ -25,14 +25,15 @@ static void engine_piece_callback(const libchess::piece_info_t& piece, void* dat
 }
 
 using query_filter_t = bool (*)(const libchess::coord*, const libchess::piece_info_t*);
-static bool engine_query_filter(const libchess::coord& position, const libchess::piece_info_t& piece, void* data) {
+static bool engine_query_filter(const libchess::coord& position,
+                                const libchess::piece_info_t& piece, void* data) {
     auto callback = (query_filter_t)data;
     return callback(&position, &piece);
 }
 
 extern "C" {
 
-native_engine_t* CreateEngine() {
+LIBCHESS_API native_engine_t* CreateEngine() {
     auto engine = new native_engine_t;
 
     engine->instance.set_capture_callback(engine_piece_callback);
@@ -41,9 +42,9 @@ native_engine_t* CreateEngine() {
     return engine;
 }
 
-void DestroyEngine(native_engine_t* engine) { delete engine; }
+LIBCHESS_API void DestroyEngine(native_engine_t* engine) { delete engine; }
 
-native_board_t* GetEngineBoard(native_engine_t* engine) {
+LIBCHESS_API native_board_t* GetEngineBoard(native_engine_t* engine) {
     auto instance = engine->instance.get_board();
 
     if (instance) {
@@ -56,7 +57,7 @@ native_board_t* GetEngineBoard(native_engine_t* engine) {
     }
 }
 
-void SetEngineBoard(native_engine_t* engine, native_board_t* board) {
+LIBCHESS_API void SetEngineBoard(native_engine_t* engine, native_board_t* board) {
     std::shared_ptr<libchess::board> instance;
     if (board != nullptr) {
         instance = board->instance;
@@ -65,30 +66,30 @@ void SetEngineBoard(native_engine_t* engine, native_board_t* board) {
     engine->instance.set_board(instance);
 }
 
-void SetEngineCaptureCallback(native_engine_t* engine, piece_callback_t callback) {
+LIBCHESS_API void SetEngineCaptureCallback(native_engine_t* engine, piece_callback_t callback) {
     engine->instance.set_callback_data((void*)callback);
 }
 
-libchess::piece_query_t* CreatePieceQuery() { return new libchess::piece_query_t; }
+LIBCHESS_API libchess::piece_query_t* CreatePieceQuery() { return new libchess::piece_query_t; }
 
-void SetQueryPieceType(libchess::piece_query_t* query, libchess::piece_type type) {
+LIBCHESS_API void SetQueryPieceType(libchess::piece_query_t* query, libchess::piece_type type) {
     query->type = type;
 }
 
-void SetQueryPieceColor(libchess::piece_query_t* query, libchess::player_color color) {
+LIBCHESS_API void SetQueryPieceColor(libchess::piece_query_t* query, libchess::player_color color) {
     query->color = color;
 }
 
-void SetQueryPieceX(libchess::piece_query_t* query, int32_t x) { query->x = x; }
-void SetQueryPieceY(libchess::piece_query_t* query, int32_t y) { query->y = y; }
+LIBCHESS_API void SetQueryPieceX(libchess::piece_query_t* query, int32_t x) { query->x = x; }
+LIBCHESS_API void SetQueryPieceY(libchess::piece_query_t* query, int32_t y) { query->y = y; }
 
-void SetQueryFilter(libchess::piece_query_t* query, query_filter_t filter) {
+LIBCHESS_API void SetQueryFilter(libchess::piece_query_t* query, query_filter_t filter) {
     query->filter = engine_query_filter;
     query->filter_data = (void*)filter;
 }
 
-void EngineFindPieces(native_engine_t* engine, libchess::piece_query_t* query,
-                      void (*callback)(const libchess::coord*)) {
+LIBCHESS_API void EngineFindPieces(native_engine_t* engine, libchess::piece_query_t* query,
+                                   void (*callback)(const libchess::coord*)) {
     std::vector<libchess::coord> pieces;
     engine->instance.find_pieces(*query, pieces);
 
@@ -98,8 +99,8 @@ void EngineFindPieces(native_engine_t* engine, libchess::piece_query_t* query,
     }
 }
 
-bool EngineComputeCheck(native_engine_t* engine, libchess::player_color color,
-                        void (*callback)(const libchess::coord*)) {
+LIBCHESS_API bool EngineComputeCheck(native_engine_t* engine, libchess::player_color color,
+                                     void (*callback)(const libchess::coord*)) {
     std::vector<libchess::coord> pieces;
     bool check = engine->instance.compute_check(color, pieces);
 
@@ -110,12 +111,12 @@ bool EngineComputeCheck(native_engine_t* engine, libchess::player_color color,
     return check;
 }
 
-bool EngineComputeCheckmate(native_engine_t* engine, libchess::player_color color) {
+LIBCHESS_API bool EngineComputeCheckmate(native_engine_t* engine, libchess::player_color color) {
     return engine->instance.compute_checkmate(color);
 }
 
-void EngineComputeLegalMoves(native_engine_t* engine, const libchess::coord* position,
-                             void (*callback)(const libchess::coord*)) {
+LIBCHESS_API void EngineComputeLegalMoves(native_engine_t* engine, const libchess::coord* position,
+                                          void (*callback)(const libchess::coord*)) {
     std::list<libchess::coord> destinations;
     engine->instance.compute_legal_moves(*position, destinations);
 
@@ -124,14 +125,15 @@ void EngineComputeLegalMoves(native_engine_t* engine, const libchess::coord* pos
     }
 }
 
-bool EngineIsMoveLegal(native_engine_t* engine, const libchess::move_t* move) {
+LIBCHESS_API bool EngineIsMoveLegal(native_engine_t* engine, const libchess::move_t* move) {
     return engine->instance.is_move_legal(*move);
 }
 
-bool EngineCommitMove(native_engine_t* engine, const libchess::move_t* move, bool advance_turn) {
+LIBCHESS_API bool EngineCommitMove(native_engine_t* engine, const libchess::move_t* move,
+                                   bool advance_turn) {
     return engine->instance.commit_move(*move, true, advance_turn);
 }
 
-void ClearEngineCache(native_engine_t* engine) { engine->instance.clear_cache(); }
+LIBCHESS_API void ClearEngineCache(native_engine_t* engine) { engine->instance.clear_cache(); }
 
 } // end of p/invoke block

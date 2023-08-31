@@ -19,13 +19,13 @@
 // for p/invoke
 extern "C" {
 
-native_board_t* CreateBoardDefault() {
+LIBCHESS_API native_board_t* CreateBoardDefault() {
     auto board = new native_board_t;
     board->instance = libchess::board::create_default();
     return board;
 }
 
-native_board_t* CreateBoard(const char* fen) {
+LIBCHESS_API native_board_t* CreateBoard(const char* fen) {
     auto instance = libchess::board::create(fen);
 
     native_board_t* board = nullptr;
@@ -37,25 +37,25 @@ native_board_t* CreateBoard(const char* fen) {
     return board;
 }
 
-void DestroyBoard(native_board_t* board) {
+LIBCHESS_API void DestroyBoard(native_board_t* board) {
     delete board; // destroys the reference
 }
 
-bool IsOutOfBounds(const libchess::coord* position) {
+LIBCHESS_API bool IsOutOfBounds(const libchess::coord* position) {
     return libchess::board::is_out_of_bounds(*position);
 }
 
-bool GetBoardPiece(native_board_t* board, const libchess::coord* position,
-                   libchess::piece_info_t* piece) {
+LIBCHESS_API bool GetBoardPiece(native_board_t* board, const libchess::coord* position,
+                                libchess::piece_info_t* piece) {
     return board->instance->get_piece(*position, piece);
 }
 
-bool SetBoardPiece(native_board_t* board, const libchess::coord* position,
-                   const libchess::piece_info_t* piece) {
+LIBCHESS_API bool SetBoardPiece(native_board_t* board, const libchess::coord* position,
+                                const libchess::piece_info_t* piece) {
     return board->instance->set_piece(*position, *piece);
 }
 
-const char* SerializeBoardFEN(native_board_t* board) {
+LIBCHESS_API const char* SerializeBoardFEN(native_board_t* board) {
     std::string fen = board->instance->serialize();
 
     size_t length = fen.length();
@@ -68,7 +68,7 @@ const char* SerializeBoardFEN(native_board_t* board) {
     return buffer;
 }
 
-void AdvanceTurn(native_board_t* board) {
+LIBCHESS_API void AdvanceTurn(native_board_t* board) {
     auto& data = board->instance->get_data();
     if (data.current_turn == libchess::player_color::white) {
         data.current_turn = libchess::player_color::black;
@@ -77,15 +77,16 @@ void AdvanceTurn(native_board_t* board) {
     }
 }
 
-libchess::player_color GetCurrentBoardTurn(native_board_t* board) {
+LIBCHESS_API libchess::player_color GetCurrentBoardTurn(native_board_t* board) {
     return board->instance->get_data().current_turn;
 }
 
-uint8_t GetBoardCastlingAvailability(native_board_t* board, libchess::player_color player) {
+LIBCHESS_API uint8_t GetBoardCastlingAvailability(native_board_t* board,
+                                                  libchess::player_color player) {
     return board->instance->get_data().player_castling_availability.at(player);
 }
 
-bool GetBoardEnPassantTarget(native_board_t* board, libchess::coord* target) {
+LIBCHESS_API bool GetBoardEnPassantTarget(native_board_t* board, libchess::coord* target) {
     auto& data = board->instance->get_data();
 
     if (data.en_passant_target.has_value()) {
@@ -96,15 +97,15 @@ bool GetBoardEnPassantTarget(native_board_t* board, libchess::coord* target) {
     }
 }
 
-uint64_t GetBoardHalfmoveClock(native_board_t* board) {
+LIBCHESS_API uint64_t GetBoardHalfmoveClock(native_board_t* board) {
     return board->instance->get_data().halfmove_clock;
 }
 
-uint64_t GetBoardFullmoveCount(native_board_t* board) {
+LIBCHESS_API uint64_t GetBoardFullmoveCount(native_board_t* board) {
     return board->instance->get_data().fullmove_count;
 }
 
-libchess::board* GetInternalBoardPointer(native_board_t* board) {
+LIBCHESS_API libchess::board* GetInternalBoardPointer(native_board_t* board) {
     return board->instance.get();
 }
 

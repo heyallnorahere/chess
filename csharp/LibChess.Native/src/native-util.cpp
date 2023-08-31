@@ -18,7 +18,7 @@
 
 extern "C" {
 
-const char* SerializeCoordinate(const libchess::coord* coord) {
+LIBCHESS_API const char* SerializeCoordinate(const libchess::coord* coord) {
     auto result = libchess::util::serialize_coordinate(*coord);
 
     size_t length = result.length();
@@ -31,7 +31,7 @@ const char* SerializeCoordinate(const libchess::coord* coord) {
     return buffer;
 }
 
-bool ParseCoordinate(const char* src, libchess::coord* result) {
+LIBCHESS_API bool ParseCoordinate(const char* src, libchess::coord* result) {
     return libchess::util::parse_coordinate(src, *result);
 }
 
