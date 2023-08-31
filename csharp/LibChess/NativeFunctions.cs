@@ -136,6 +136,9 @@ namespace LibChess
         [DllImport(sNativeLibraryName)]
         public static extern unsafe bool ParseCoordinate(string src, Coord* result);
 
+        [DllImport(sNativeLibraryName)]
+        public static extern void FreeMemory(IntPtr block);
+
         #endregion
     }
 }

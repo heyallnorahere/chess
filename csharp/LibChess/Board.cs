@@ -160,7 +160,7 @@ namespace LibChess
             var ptr = NativeFunctions.SerializeBoardFEN(mAddress);
             var fen = Marshal.PtrToStringAuto(ptr) ?? throw new ArgumentException();
 
-            Marshal.FreeHGlobal(ptr);
+            NativeFunctions.FreeMemory(ptr);
             return fen;
         }
 

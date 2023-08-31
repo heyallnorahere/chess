@@ -44,7 +44,7 @@ namespace LibChess
                 var ptr = NativeFunctions.SerializeCoordinate(coord);
                 var result = Marshal.PtrToStringAuto(ptr) ?? throw new ArgumentException();
 
-                Marshal.FreeHGlobal(ptr);
+                NativeFunctions.FreeMemory(ptr);
                 return result;
             }
         }

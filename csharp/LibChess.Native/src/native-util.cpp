@@ -35,4 +35,6 @@ LIBCHESS_API bool ParseCoordinate(const char* src, libchess::coord* result) {
     return libchess::util::parse_coordinate(src, *result);
 }
 
+LIBCHESS_API void FreeMemory(void* block) { free(block); }
+
 } // end of p/invoke block
