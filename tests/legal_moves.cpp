@@ -98,6 +98,7 @@ protected:
         inline_data({ "d5 e6", "en_passant" });
         inline_data({ "e1 g1", "castling" });
         inline_data({ "f1 g1", "check" });
+        inline_data({ "b2 a1", "king_move" });
     }
 
     virtual void invoke(const std::vector<std::string>& data) override {
@@ -254,6 +255,8 @@ DEFINE_ENTRYPOINT() {
 
     positions.set_fen("castling_unavailable",
                       "rnbqkbnr/pppppppp/8/8/8/5NP1/PPPPPPBP/RNBQK2R w kq - 0 1");
+
+    positions.set_fen("king_move", "6k1/7p/7P/5p2/8/8/pK5r/8 w - - 4 46");
 
     invoke_check<legal_moves>(positions);
     invoke_check<illegal_moves>(positions);

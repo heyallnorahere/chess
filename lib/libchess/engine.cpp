@@ -171,8 +171,9 @@ namespace libchess {
                 for (size_t j = 0; j < king_direction_factors.size(); j++) {
                     int32_t y_factor = king_direction_factors[j];
 
-                    coord dst = pos + coord(x_factor, y_factor);
-                    if (dst.taxicab_length() == 0 || board::is_out_of_bounds(dst)) {
+                    coord delta(x_factor, y_factor);
+                    coord dst = pos + delta;
+                    if (delta.taxicab_length() == 0 || board::is_out_of_bounds(dst)) {
                         continue;
                     }
 
