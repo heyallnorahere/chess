@@ -158,7 +158,7 @@ namespace LibChess
         public unsafe string SerializeFEN()
         {
             var ptr = NativeFunctions.SerializeBoardFEN(mAddress);
-            var fen = Marshal.PtrToStringAuto(ptr) ?? throw new ArgumentException();
+            var fen = Marshal.PtrToStringAnsi(ptr) ?? throw new ArgumentException();
 
             NativeFunctions.FreeMemory(ptr);
             return fen;

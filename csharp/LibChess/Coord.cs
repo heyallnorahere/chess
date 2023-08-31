@@ -42,7 +42,7 @@ namespace LibChess
             fixed (Coord* coord = &this)
             {
                 var ptr = NativeFunctions.SerializeCoordinate(coord);
-                var result = Marshal.PtrToStringAuto(ptr) ?? throw new ArgumentException();
+                var result = Marshal.PtrToStringAnsi(ptr) ?? throw new ArgumentException();
 
                 NativeFunctions.FreeMemory(ptr);
                 return result;
