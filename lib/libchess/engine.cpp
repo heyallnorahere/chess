@@ -414,6 +414,19 @@ namespace libchess {
 
         piece_info_t captured;
         if (m_board->get_piece(capture_position, &captured)) {
+            if (captured.type == piece_type::rook && capture_position.y == (captured.color == player_color::white ? 0 : board::width - 1))
+            {
+                uint8_t& availability = m_board->get_data().player_castling_availability[captured.color];
+                switch (capture_position.x) {
+                case 0:
+                    availability &= ~castle_side_queen;
+                    break;
+                case board::width - 1:
+                    availability &= ~castle_side_king;
+                    break;
+                }
+            }
+
             if (m_capture_callback != nullptr) {
                 m_capture_callback(captured, m_callback_data);
             }

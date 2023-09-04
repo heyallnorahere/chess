@@ -141,26 +141,30 @@ private:
 class voided_castling_availability : public test_theory {
 protected:
     virtual void add_inline_data() override {
-        inline_data({ "a1 b1", "k" });
-        inline_data({ "h1 g1", "q" });
-        inline_data({ "e1 e2", "" });
-        inline_data({ "e1 d1", "" });
-        inline_data({ "e1 g1", "" });
-        inline_data({ "e1 c1", "" });
+        inline_data({ "a1 b1", "w", "k" });
+        inline_data({ "h1 g1", "w", "q" });
+        inline_data({ "e1 e2", "w", "" });
+        inline_data({ "e1 d1", "w", "" });
+        inline_data({ "e1 g1", "w", "" });
+        inline_data({ "e1 c1", "w", "" });
+        inline_data({ "h8 h1", "b", "q" });
     };
 
     virtual void invoke(const std::vector<std::string>& data) override {
-        auto board = libchess::board::create("1k6/8/8/8/8/8/8/R3K2R w KQ - 0 1");
+        const std::string& turn = data[1];
+        std::string fen = "1k5r/8/8/8/8/8/8/R3K2R " + turn + " KQ - 0 1";
+
+        auto board = libchess::board::create(fen);
         assert::is_not_nullptr(board);
 
         libchess::move_t move;
         assert::is_true(parse_move(data[0], move));
 
         uint8_t expected = 0;
-        const std::string& expectedCastlingAvailability = data[1];
+        const std::string& expectedCastlingAvailability = data[2];
 
         for (int i = 0; i < expectedCastlingAvailability.length(); i++) {
-            switch (data[1][0]) {
+            switch (expectedCastlingAvailability[i]) {
             case 'k':
                 expected |= libchess::castle_side_king;
                 break;
