@@ -97,7 +97,7 @@ namespace LibChess
             mCallbackHandle.Free();
         }
 
-        private bool IsPromotionMove(Move move, bool committed)
+        public bool IsPromotionMove(Move move, bool committed)
         {
             using var board = Board;
             if (board is null)
@@ -320,7 +320,7 @@ namespace LibChess
 
         private readonly IntPtr mAddress;
         private readonly GCHandle mCallbackHandle;
-        public bool mDisposed;
+        private bool mDisposed;
         private Move? mLastMove;
     }
 }
